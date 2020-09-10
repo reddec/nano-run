@@ -1,0 +1,71 @@
+project_name: nano-run
+builds:
+  - env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+      - arm
+    flags:
+      - -trimpath
+    main: ./cmd/nano-run
+
+nfpms:
+  - id: debian
+    file_name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
+    replacements:
+      Linux: linux
+      386: i386
+    homepage: https://github.com/reddec/nano-run
+    maintainer: Baryshnikov Aleksandr <owner@reddec.net>
+    description:  Lightweigt runner for web requests
+    license: Apache-2.0
+    formats:
+      - deb
+    scripts:
+      postinstall: "bundle/debian/postinstall.sh"
+      preremove: "bundle/debian/preremove.sh"
+    empty_folders:
+      - /etc/nano-run/conf.d
+    config_files:
+      "bundle/debian/server.yaml": "/etc/nano-run/server.yaml"
+uploads:
+  - name: bintray
+    method: PUT
+    mode: archive
+    username: reddec
+    custom_artifact_name: true
+    ids:
+      - debian
+    target: 'https://api.bintray.com/content/reddec/debian/{{ .ProjectName }}/{{ .Version }}/{{ .ArtifactName }};publish=1;deb_component=main;deb_distribution=all;deb_architecture={{ .Arch }}'
+dockers:
+  - binaries:
+      - nano-run
+    dockerfile: Dockerfile
+    extra_files:
+      - bundle/docker/server.yaml
+    build_flag_templates:
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.title={{.ProjectName}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+    image_templates:
+      - "reddec/nano-run:{{ .Tag }}"
+      - "reddec/nano-run:v{{ .Major }}"
+      - "reddec/nano-run:v{{ .Major }}.{{ .Minor }}"
+      - "reddec/nano-run:latest"
+checksum:
+  name_template: 'checksums.txt'
+snapshot:
+  name_template: "{{ .Tag }}-next"
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^build:'

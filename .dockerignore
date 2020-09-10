@@ -1,0 +1,7 @@
+Dockerfile
+/.idea
+/_docs
+/build
+/dist
+/run
+/conf.d

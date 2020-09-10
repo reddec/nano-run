@@ -1,0 +1,19 @@
+title Request processing
+
+Client->System: HTTP(s) request
+System->System: Save request
+System->Client: Correlation ID
+loop attempts
+System->Worker: Request
+alt request failed
+Worker->System: failed
+System->System: requeue
+else success
+Worker->System: success
+end
+System->System: save attemp
+end
+
+System->System: mark request as complete
+Client->System: get result
+System->Client: info
