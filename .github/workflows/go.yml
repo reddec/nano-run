@@ -1,0 +1,40 @@
+name: Build project
+on:
+  push:
+    tags:
+      - 'v*'
+jobs:
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+    - name: Set up Go 1.15
+      uses: actions/setup-go@v1
+      with:
+        go-version: '^1.15'
+      id: go
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v2
+      with:
+        lfs: true
+        fetch-depth: 0
+    - name: Checkout LFS objects
+      run: git lfs checkout
+
+    - name: Pull tag
+      run: git fetch --tags
+    - uses: azure/docker-login@v1
+      with:
+        username: 'reddec'
+        password: ${{ secrets.DOCKERIO_PASSWORD }}
+
+    - name: Run GoReleaser
+      uses: goreleaser/goreleaser-action@v2
+      with:
+        version: latest
+        args: release --rm-dist --release-footer _footer.md
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        UPLOAD_BINTRAY_SECRET: ${{ secrets.UPLOAD_BINTRAY_SECRET }}
