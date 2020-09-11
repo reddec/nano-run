@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"sync"
 	"time"
 
@@ -243,6 +244,7 @@ func (mgr *Worker) call(ctx context.Context, requestID string, info *meta.Reques
 		return err
 	}
 	defer f.Close()
+	attemptID := uuid.New().String()
 
 	req, err := http.NewRequestWithContext(ctx, info.Method, info.URI, f)
 	if err != nil {
@@ -251,8 +253,10 @@ func (mgr *Worker) call(ctx context.Context, requestID string, info *meta.Reques
 	for k, v := range info.Headers {
 		req.Header[k] = v
 	}
+	req.Header.Set("X-Correlation-Id", requestID)
 
-	attemptID := uuid.New().String()
+	req.Header.Set("X-Attempt-Id", attemptID)
+	req.Header.Set("X-Attempt", strconv.Itoa(len(info.Attempts)+1))
 
 	var header meta.AttemptHeader
 
@@ -377,7 +381,7 @@ func (mgr *Worker) saveRequest(req *http.Request) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return id, mgr.meta.CreateRequest(id, req.Header, req.RequestURI, req.Method)
+	return id, mgr.meta.CreateRequest(id, req.Header, req.URL.RequestURI(), req.Method)
 }
 
 func (mgr *Worker) requestDead(ctx context.Context, id string, info *meta.Request) {

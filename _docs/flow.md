@@ -12,3 +12,8 @@ During restart - all incomplete tasks will queued again.
 
 ![image](https://user-images.githubusercontent.com/6597086/92578247-3085bb00-f2be-11ea-87de-e2c9d94a21fa.png)
 
+Worker will call upstream with additional headers:
+
+- `X-Correlation-Id` - request id
+- `X-Attempt-Id` - attempt id
+- `X-Attempt` - attempt num
