@@ -2,7 +2,7 @@
 Description=Lightweight async request processor
 
 [Service]
-ExecStart=/usr/bin/nano-run server run -c /etc/nano-run/server.yaml
+ExecStart=/usr/local/bin/nano-run server run -c /etc/nano-run/server.yaml
 Restart=always
 RestartSec=3
 User=nano-run
