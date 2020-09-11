@@ -80,6 +80,7 @@ func New(tasks, requeue queue.Queue, blobs blob.Blob, meta meta.Meta) (*Worker, 
 		requeue:     requeue,
 		blob:        blobs,
 		meta:        meta,
+		reloadMeta:  make(chan struct{}, 1),
 		maxAttempts: defaultAttempts,
 		interval:    defaultInterval,
 		concurrency: runtime.NumCPU(),
@@ -107,6 +108,7 @@ type Worker struct {
 	onProcess   ProcessHandler
 	maxAttempts int
 	concurrency int
+	reloadMeta  chan struct{}
 	interval    time.Duration
 }
 
@@ -134,6 +136,19 @@ func (mgr *Worker) Enqueue(req *http.Request) (string, error) {
 	log.Println("new request saved:", id)
 	err = mgr.queue.Push([]byte(id))
 	return id, err
+}
+
+func (mgr *Worker) Complete(requestID string) error {
+	err := mgr.meta.Complete(requestID)
+	if err != nil {
+		return err
+	}
+	select {
+	case mgr.reloadMeta <- struct{}{}:
+	default:
+
+	}
+	return nil
 }
 
 func (mgr *Worker) OnSuccess(handler CompleteHandler) *Worker {
@@ -322,7 +337,8 @@ func (mgr *Worker) processQueueItem(ctx context.Context) error {
 		return fmt.Errorf("get request %s meta info: %w", id, err)
 	}
 	if info.Complete {
-		return fmt.Errorf("request %s already complete", id)
+		log.Printf("request %s already complete", id)
+		return nil
 	}
 	err = mgr.call(ctx, id, info)
 	if err == nil {
@@ -347,10 +363,23 @@ func (mgr *Worker) processReQueueItem(ctx context.Context) error {
 
 	d := time.Since(item.At)
 	if d < mgr.interval {
-		select {
-		case <-time.After(mgr.interval - d):
-		case <-ctx.Done():
-			return ctx.Err()
+		var ok = false
+		for !ok {
+			info, err := mgr.meta.Get(item.ID)
+			if err != nil {
+				return fmt.Errorf("re-queue: get meta %s: %w", item.ID, err)
+			}
+			if info.Complete {
+				log.Printf("re-queue: %s already complete", item.ID)
+				return nil
+			}
+			select {
+			case <-time.After(mgr.interval - d):
+				ok = true
+			case <-mgr.reloadMeta:
+			case <-ctx.Done():
+				return ctx.Err()
+			}
 		}
 	}
 	return mgr.queue.Push([]byte(item.ID))

@@ -81,6 +81,15 @@ Body example:
 Will redirect to the complete attempt or 404
 
 
+## Force complete
+
+|||
+|------------|---------------------------|
+| **Method** | DELET                     |
+| **Path**   | /{correlationId}          |
+
+Forcefully mark request as complete and stop processing (including re-queue)
+
 
 ## Get attempt
 

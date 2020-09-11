@@ -34,6 +34,7 @@ func Expose(router *mux.Router, wrk *worker.Worker) {
 	})
 	// get state: 200 with json description. For complete request - Location header will be filled.
 	router.Path("/{id}").Methods("GET").HandlerFunc(createTask(wrk))
+	router.Path("/{id}").Methods("DELETE").HandlerFunc(completeRequest(wrk))
 	router.Path("/{id}/completed").Methods("GET").HandlerFunc(getComplete(wrk))
 	// get attempt result as-is.
 	router.Path("/{id}/attempt/{attemptId}").Methods("GET").HandlerFunc(getAttempt(wrk))
@@ -83,6 +84,28 @@ func createTask(wrk *worker.Worker) http.HandlerFunc {
 		}
 		writer.WriteHeader(http.StatusOK)
 		_, _ = writer.Write(data)
+	}
+}
+
+func completeRequest(wrk *worker.Worker) http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		params := mux.Vars(request)
+		requestID := params["id"]
+		info, err := wrk.Meta().Get(requestID)
+		if err != nil {
+			log.Println("failed access request", requestID, ":", err)
+			http.NotFound(writer, request)
+			return
+		}
+		if !info.Complete {
+			err = wrk.Meta().Complete(requestID)
+			if err != nil {
+				log.Println("failed to mark request as complete:", err)
+				http.Error(writer, "failed to complete", http.StatusInternalServerError)
+				return
+			}
+		}
+		writer.WriteHeader(http.StatusNoContent)
 	}
 }
 
