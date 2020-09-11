@@ -35,8 +35,11 @@ nfpms:
       preremove: "bundle/debian/preremove.sh"
     empty_folders:
       - /etc/nano-run/conf.d
+      - /var/nano-run
     config_files:
       "bundle/debian/server.yaml": "/etc/nano-run/server.yaml"
+    files:
+      "bundle/debian/nano-run.service": "/etc/systemd/system/nano-run.service"
 uploads:
   - name: bintray
     method: PUT
