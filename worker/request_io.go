@@ -35,3 +35,7 @@ func (mo *responseStream) WriteHeader(statusCode int) {
 	mo.statusSent = true
 	mo.meta.Code = statusCode
 }
+
+func (mo *responseStream) Status(status int) {
+	mo.meta.Code = status
+}

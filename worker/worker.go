@@ -268,8 +268,8 @@ func (mgr *Worker) call(ctx context.Context, requestID string, info *meta.Reques
 	for k, v := range info.Headers {
 		req.Header[k] = v
 	}
-	req.Header.Set("X-Correlation-Id", requestID)
 
+	req.Header.Set("X-Correlation-Id", requestID)
 	req.Header.Set("X-Attempt-Id", attemptID)
 	req.Header.Set("X-Attempt", strconv.Itoa(len(info.Attempts)+1))
 

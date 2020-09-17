@@ -77,6 +77,10 @@ func (bh *binHandler) ServeHTTP(writer http.ResponseWriter, request *http.Reques
 	internal.SetBinFlags(cmd)
 	err := cmd.Run()
 
+	if codeReset, ok := writer.(interface{ Status(status int) }); ok && err != nil {
+		codeReset.Status(http.StatusBadGateway)
+	}
+
 	if marker.dataSent {
 		return
 	}
