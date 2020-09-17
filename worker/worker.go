@@ -146,7 +146,6 @@ func (mgr *Worker) Complete(requestID string) error {
 	select {
 	case mgr.reloadMeta <- struct{}{}:
 	default:
-
 	}
 	return nil
 }
