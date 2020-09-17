@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 
@@ -84,4 +85,26 @@ func Test_create(t *testing.T) {
 	var info meta.Request
 	err := json.Unmarshal(res.Body.Bytes(), &info)
 	assert.NoError(t, err)
+
+	// wait for result
+	var resultLocation string
+	for {
+		req = httptest.NewRequest(http.MethodGet, infoURL+"/completed", nil)
+		res = httptest.NewRecorder()
+		srv.ServeHTTP(res, req)
+		if res.Code == http.StatusMovedPermanently {
+			resultLocation = res.Header().Get("Location")
+			break
+		}
+		if assert.Equal(t, http.StatusNotFound, res.Code) {
+			return
+		}
+		time.Sleep(time.Second)
+	}
+
+	req = httptest.NewRequest(http.MethodGet, resultLocation, nil)
+	res = httptest.NewRecorder()
+	srv.ServeHTTP(res, req)
+	assert.Equal(t, http.StatusOK, res.Code)
+	assert.Equal(t, "hello world", res.Body.String())
 }
