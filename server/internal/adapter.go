@@ -60,6 +60,7 @@ func getTask(wrk *worker.Worker) http.HandlerFunc {
 			http.Error(writer, "encoding", http.StatusInternalServerError)
 			return
 		}
+		writer.Header().Set("X-Correlation-Id", requestID)
 		writer.Header().Set("Content-Type", "application/json")
 		writer.Header().Set("Content-Length", strconv.Itoa(len(data)))
 		writer.Header().Set("Content-Version", strconv.Itoa(len(info.Attempts)))
