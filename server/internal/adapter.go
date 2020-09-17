@@ -17,6 +17,7 @@ import (
 // Expose worker as HTTP handler:
 //     POST /                  - post task async, returns 303 See Other and location.
 //     GET  /:id               - get task info.
+//     POST /:id               - retry task, redirects to /:id
 //     GET  /:id/completed     - redirect to completed attempt (or 404 if task not yet complete)
 //     GET  /:id/attempt/:atid - get attempt result (as-is).
 //     GET  /:id/request       - replay request (as-is).
@@ -32,8 +33,8 @@ func Expose(router *mux.Router, wrk *worker.Worker) {
 		writer.Header().Set("X-Correlation-Id", id)
 		http.Redirect(writer, request, id, http.StatusSeeOther)
 	})
-	// get state: 200 with json description. For complete request - Location header will be filled.
-	router.Path("/{id}").Methods("GET").HandlerFunc(createTask(wrk))
+	router.Path("/{id}").Methods("GET").HandlerFunc(getTask(wrk))
+	router.Path("/{id}").Methods("POST").HandlerFunc(retry(wrk))
 	router.Path("/{id}").Methods("DELETE").HandlerFunc(completeRequest(wrk))
 	router.Path("/{id}/completed").Methods("GET").HandlerFunc(getComplete(wrk))
 	// get attempt result as-is.
@@ -43,7 +44,7 @@ func Expose(router *mux.Router, wrk *worker.Worker) {
 }
 
 // get request meta information.
-func createTask(wrk *worker.Worker) http.HandlerFunc {
+func getTask(wrk *worker.Worker) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		params := mux.Vars(request)
 		requestID := params["id"]
@@ -84,6 +85,21 @@ func createTask(wrk *worker.Worker) http.HandlerFunc {
 		}
 		writer.WriteHeader(http.StatusOK)
 		_, _ = writer.Write(data)
+	}
+}
+
+func retry(wrk *worker.Worker) http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		params := mux.Vars(request)
+		requestID := params["id"]
+		id, err := wrk.Retry(request.Context(), requestID)
+		if err != nil {
+			log.Println("failed to retry:", err)
+			http.Error(writer, "failed to enqueue", http.StatusInternalServerError)
+			return
+		}
+		writer.Header().Set("X-Correlation-Id", id)
+		http.Redirect(writer, request, id, http.StatusSeeOther)
 	}
 }
 

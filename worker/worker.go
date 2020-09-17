@@ -252,22 +252,28 @@ func (mgr *Worker) Run(global context.Context) error {
 	return ctx.Err()
 }
 
+// Retry processing.
+func (mgr *Worker) Retry(ctx context.Context, requestID string) (string, error) {
+	info, err := mgr.meta.Get(requestID)
+	if err != nil {
+		return "", err
+	}
+	req, err := mgr.restoreRequest(ctx, requestID, info)
+	if err != nil {
+		return "", err
+	}
+	defer req.Body.Close()
+	return mgr.Enqueue(req)
+}
+
 func (mgr *Worker) call(ctx context.Context, requestID string, info *meta.Request) error {
 	// caller should ensure that request id is valid
-	f, err := mgr.blob.Get(requestID)
+	req, err := mgr.restoreRequest(ctx, requestID, info)
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer req.Body.Close()
 	attemptID := uuid.New().String()
-
-	req, err := http.NewRequestWithContext(ctx, info.Method, info.URI, f)
-	if err != nil {
-		return err
-	}
-	for k, v := range info.Headers {
-		req.Header[k] = v
-	}
 
 	req.Header.Set("X-Correlation-Id", requestID)
 	req.Header.Set("X-Attempt-Id", attemptID)
@@ -440,6 +446,22 @@ func (mgr *Worker) requestProcessed(ctx context.Context, id string, attemptID st
 		handler(ctx, id, attemptID, info)
 	}
 	log.Println("request", id, "processed with attempt", attemptID)
+}
+
+func (mgr *Worker) restoreRequest(ctx context.Context, requestID string, info *meta.Request) (*http.Request, error) {
+	f, err := mgr.blob.Get(requestID)
+	if err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequestWithContext(ctx, info.Method, info.URI, f)
+	if err != nil {
+		_ = f.Close()
+		return nil, err
+	}
+	for k, v := range info.Headers {
+		req.Header[k] = v
+	}
+	return req, nil
 }
 
 type requeueItem struct {
