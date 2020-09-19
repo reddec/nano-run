@@ -76,3 +76,4 @@ changelog:
       - '^docs:'
       - '^test:'
       - '^build:'
+      - '^lint:'
