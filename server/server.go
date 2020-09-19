@@ -97,7 +97,6 @@ func (cfg Config) Create(global context.Context) (*Server, error) {
 }
 
 func (cfg Config) Run(global context.Context) error {
-
 	ctx, cancel := context.WithCancel(global)
 	defer cancel()
 
@@ -130,7 +129,7 @@ func (cfg Config) Run(global context.Context) error {
 	}
 	cancel()
 	<-done
-	return ctx.Err()
+	return err
 }
 
 func limitRequest(maxSize int64, handler http.Handler) http.Handler {
