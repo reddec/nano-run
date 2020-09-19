@@ -81,9 +81,6 @@ func (bh *binHandler) ServeHTTP(writer http.ResponseWriter, request *http.Reques
 		codeReset.Status(http.StatusBadGateway)
 	}
 
-	if marker.dataSent {
-		return
-	}
 	if err != nil {
 		writer.Header().Set("X-Return-Code", strconv.Itoa(cmd.ProcessState.ExitCode()))
 		writer.WriteHeader(http.StatusBadGateway)
