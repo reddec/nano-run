@@ -122,12 +122,15 @@ func (mgr *Worker) init() error {
 	})
 }
 
+// Cleanup internal resource.
 func (mgr *Worker) Close() {
 	if fn := mgr.cleanup; fn != nil {
 		fn()
 	}
 }
 
+// Enqueue request to storage, save meta-info to meta storage and push id into processing queue. Generated ID
+// always unique and returns only in case of successful enqueue.
 func (mgr *Worker) Enqueue(req *http.Request) (string, error) {
 	id, err := mgr.saveRequest(req)
 	if err != nil {
@@ -138,6 +141,7 @@ func (mgr *Worker) Enqueue(req *http.Request) (string, error) {
 	return id, err
 }
 
+// Complete request manually.
 func (mgr *Worker) Complete(requestID string) error {
 	err := mgr.meta.Complete(requestID)
 	if err != nil {
