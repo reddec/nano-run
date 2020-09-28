@@ -98,7 +98,9 @@ func (rms *MicroMeta) Close() error {
 
 func (rms *MicroMeta) Iterate(handler func(id string, record meta.Request) error) error {
 	return rms.db.View(func(txn *badger.Txn) error {
-		iter := txn.NewIterator(badger.DefaultIteratorOptions)
+		cfg := badger.DefaultIteratorOptions
+		cfg.Reverse = true
+		iter := txn.NewIterator(cfg)
 		iter.Rewind()
 		defer iter.Close()
 		for iter.Valid() {
