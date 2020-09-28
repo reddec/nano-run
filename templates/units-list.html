@@ -1,17 +1,78 @@
 <html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/mvp.css">
+</head>
 <body>
-{{range .Units}}
-    <div>
-        <a href="unit/{{.Name}}">
-            <h2>{{.Name}}</h2>
-        </a>
-        <p>
-            <span class="unit-mode unit-mode-{{.Mode}}">{{.Mode}}</span>,
-            <span class="unit-mode unit-mode-workers">{{.Workers}}</span>,
-            <span class="unit-mode unit-mode-interval">{{.Interval}}</span>,
-            <span class="unit-mode unit-mode-timeout">{{.Timeout}}</span>,
-        </p>
-    </div>
-{{end}}
+<header>
+    <nav>
+    </nav>
+    <h1> Units </h1>
+</header>
+<main>
+    <section>
+        <table>
+            <thead>
+            <tr>
+                <th>Name</th>
+                <th>Mode</th>
+                <th>Concurrency</th>
+                <th>Attempts</th>
+                <th>Interval</th>
+                <th>Timeout</th>
+                <th>Max request size</th>
+                <th>Working directory</th>
+            </tr>
+            </thead>
+            <tbody>
+            {{range .Units}}
+                <tr>
+                    <td>
+                        <a href="unit/{{.Name}}">
+                            {{.Name}}{{if .Secured}} (secured){{end}}
+                        </a>
+                    </td>
+                    <td>
+                        <span class="unit-mode unit-mode-{{.Mode}}">{{.Mode}}</span>
+                    </td>
+                    <td>
+                        <span class="unit-mode unit-mode-workers">{{.Workers}}</span>
+                    </td>
+                    <td>
+                        {{.Attempts}}
+                    </td>
+                    <td>
+                        <span class="unit-mode unit-mode-interval">{{.Interval}}</span>
+                    </td>
+                    <td>
+                        {{with .Timeout}}
+                            {{.}}
+                        {{else}}
+                            ∞
+                        {{end}}
+                    </td>
+                    <td>
+                        {{with .MaxRequest}}
+                            {{.}}
+                        {{else}}
+                            ∞
+                        {{end}}
+                    </td>
+                    <td>
+                        {{with .WorkDir}}
+                            <details>
+                                <summary>static</summary>
+                                <p>{{.}}</p>
+                            </details>
+                        {{else}}
+                            <i>dynamic</i>
+                        {{end}}
+                    </td>
+                </tr>
+            {{end}}
+            </tbody>
+        </table>
+    </section>
+</main>
 </body>
 </html>

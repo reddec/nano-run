@@ -15,6 +15,7 @@ import (
 
 type runCmd struct {
 	Directory   string        `long:"directory" short:"d" env:"DIRECTORY" description:"Data directory" default:"run"`
+	UI          string        `long:"ui" env:"UI" description:"Path to UI directory" default:"templates"`
 	Interval    time.Duration `long:"interval" short:"i" env:"INTERVAL" description:"Requeue interval" default:"3s"`
 	Attempts    int           `long:"attempts" short:"a" env:"ATTEMPTS" description:"Max number of attempts" default:"5"`
 	Concurrency int           `long:"concurrency" short:"c" env:"CONCURRENCY" description:"Number of parallel worker (0 - mean number of CPU)" default:"0"`
@@ -35,6 +36,7 @@ func (cfg *runCmd) Execute([]string) error {
 	srv := runner.DefaultConfig()
 	srv.Bind = cfg.Bind
 	srv.WorkingDirectory = cfg.Directory
+	srv.UIDirectory = cfg.UI
 	srv.ConfigDirectory = tmpDir
 
 	unit := server.DefaultUnit()

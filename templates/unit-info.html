@@ -1,18 +1,106 @@
-<html>
+<html lang="en">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/mvp.css">
+</head>
 <body>
-<div>
-    <a href="unit/{{.Unit.Name}}">
-        <h2>{{.Unit.Name}}</h2>
-        {{if .Unit.Secured}}
-            secured
+<main>
+    <section>
+        <header>
+            <h2><a href="../units">Units</a> :: {{.Unit.Name}}</h2>
+            <h4>
+            <code><script>document.write((new URL("../../api/{{.Unit.Name}}/", window.location).href))</script></code>
+            </h4>
+        </header>
+        <aside>
+            <h3>Configuration</h3>
+            <ul>
+                {{with .Unit}}
+                    <li>
+                        <b>Mode: </b>{{.Mode}}
+                    </li>
+                    <li>
+                        <b>Concurrency: </b>{{.Workers}}
+                    </li>
+                    <li>
+                        <b>Attempts: </b>{{.Attempts}}
+                    </li>
+                    <li>
+                        <b>Interval: </b>{{.Interval}}
+                    </li>
+                    <li>
+                        <b>Timeout: </b>
+                        {{with .Timeout}}
+                            {{.}}
+                        {{else}}
+                            ∞
+                        {{end}}
+                    </li>
+                    <li>
+                        <b>Max request size: </b>
+                        {{with .MaxRequest}}
+                            {{.}}
+                        {{else}}
+                            ∞
+                        {{end}}
+                    </li>
+                    <li>
+                        <b>Working directory: </b>
+                        {{with .WorkDir}}
+                            <sup>static</sup>
+                            <span style="overflow-x: auto; word-break: break-all">{{.}}</span>
+                        {{else}}
+                            <i>dynamic</i>
+                        {{end}}
+                    </li>
+                {{end}}
+            </ul>
+        </aside>
+        <aside>
+            <h3>Environment</h3>
+            <table>
+                <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Value</th>
+                </tr>
+                </thead>
+                <tbody>
+                {{range $k,$v := .Unit.Environment}}
+                    <tr>
+                        <td>
+                            <pre>{{$k}}</pre>
+                        </td>
+                        <td>{{$v}}</td>
+                    </tr>
+                {{end}}
+                </tbody>
+            </table>
+        </aside>
+        {{with .Unit.Authorization}}
+            <aside>
+                <h3>Authorization{{if not $.Unit.Secured}} ⚠️{{end}}</h3>
+                <table>
+                    <tr>
+                        <th>JWT</th>
+                        <td>{{if .JWT.Enable}}✅{{else}}❌{{end}}</td>
+                    </tr>
+                    <tr>
+                        <th>Token in query</th>
+                        <td>{{if .QueryToken.Enable}}✅{{else}}❌{{end}}</td>
+                    </tr>
+                    <tr>
+                        <th>Token in header</th>
+                        <td>{{if .HeaderToken.Enable}}✅{{else}}❌{{end}}</td>
+                    </tr>
+                    <tr>
+                        <th>Basic auth</th>
+                        <td>{{if .Basic.Enable}}✅{{else}}❌{{end}}</td>
+                    </tr>
+                </table>
+            </aside>
         {{end}}
-    </a>
-    <p>
-        <span class="unit-mode unit-mode-{{.Unit.Mode}}">{{.Unit.Mode}}</span>,
-        <span class="unit-mode unit-mode-workers">{{.Unit.Workers}}</span>,
-        <span class="unit-mode unit-mode-interval">{{.Unit.Interval}}</span>,
-        <span class="unit-mode unit-mode-timeout">{{.Unit.Timeout}}</span>,
-    </p>
-</div>
+    </section>
+</main>
 </body>
 </html>

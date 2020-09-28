@@ -1,11 +1,9 @@
 package ui
 
 import (
-	"html/template"
 	"net/http"
 	"path/filepath"
 
-	"github.com/Masterminds/sprig"
 	"github.com/gin-gonic/gin"
 
 	"nano-run/server"
@@ -13,21 +11,23 @@ import (
 
 func Expose(units []server.Unit, uiDir string) http.Handler {
 	router := gin.New()
-	Attach(router, units, uiDir)
+	router.LoadHTMLGlob(filepath.Join(uiDir, "*.html"))
+	Attach(router, units)
 	return router
 }
 
-func Attach(router gin.IRouter, units []server.Unit, uiDir string) {
+func Attach(router gin.IRouter, units []server.Unit) {
 	ui := &uiRouter{
-		dir:   uiDir,
 		units: units,
 	}
+	router.GET("", func(gctx *gin.Context) {
+		gctx.Redirect(http.StatusTemporaryRedirect, "units")
+	})
 	router.GET("/units", ui.listUnits)
 	router.GET("/unit/:name", ui.unitInfo)
 }
 
 type uiRouter struct {
-	dir   string
 	units []server.Unit
 }
 
@@ -57,16 +57,4 @@ func (ui *uiRouter) listUnits(gctx *gin.Context) {
 	}
 	reply.Units = ui.units
 	gctx.HTML(http.StatusOK, "units-list.html", reply)
-}
-
-func (ui *uiRouter) getTemplate(name string) *template.Template {
-	t, err := template.New("").Funcs(sprig.HtmlFuncMap()).ParseFiles(filepath.Join(ui.dir, name))
-	if err == nil {
-		return t
-	}
-	t, err = template.New("").Parse("<html><body>Ooops... Page not found</body></html>")
-	if err != nil {
-		panic(err)
-	}
-	return t
 }

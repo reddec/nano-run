@@ -91,14 +91,13 @@ func (cfg Config) Create(global context.Context) (*Server, error) {
 	ctx, cancel := context.WithCancel(global)
 
 	router := gin.Default()
+	router.LoadHTMLGlob(filepath.Join(cfg.UIDirectory, "*.html"))
+	router.Static("/static", filepath.Join(cfg.UIDirectory, "static"))
 	server.Attach(router.Group("/api/"), units, workers)
-	ui.Attach(router.Group("/ui/"), units, cfg.UIDirectory)
-	router.Group("/", func(gctx *gin.Context) {
+	ui.Attach(router.Group("/ui/"), units)
+	router.GET("/", func(gctx *gin.Context) {
 		gctx.Redirect(http.StatusTemporaryRedirect, "ui")
 	})
-	//router.Path("/").Methods("GET").HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-	//	http.Redirect(writer, request, "ui", http.StatusTemporaryRedirect)
-	//})
 
 	srv := &Server{
 		Handler: router,
