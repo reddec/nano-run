@@ -5,10 +5,11 @@ import (
 	"net/http"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 )
 
-func (cfg Unit) enableAuthorization() func(handler http.Handler) http.Handler {
+func (cfg Unit) enableAuthorization() func(gctx *gin.Context) {
 	var handlers []AuthHandlerFunc
 	if cfg.Authorization.JWT.Enable {
 		handlers = append(handlers, cfg.Authorization.JWT.Create())
@@ -22,26 +23,19 @@ func (cfg Unit) enableAuthorization() func(handler http.Handler) http.Handler {
 	if cfg.Authorization.Basic.Enable {
 		handlers = append(handlers, cfg.Authorization.Basic.Create())
 	}
-	if len(handlers) == 0 {
-		return func(handler http.Handler) http.Handler {
-			return handler
+	return func(gctx *gin.Context) {
+		var authorized = len(handlers) == 0
+		for _, h := range handlers {
+			if h(gctx.Request) {
+				authorized = true
+				break
+			}
 		}
-	}
-	return func(handler http.Handler) http.Handler {
-		return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-			var authorized bool
-			for _, h := range handlers {
-				if h(request) {
-					authorized = true
-					break
-				}
-			}
-			if !authorized {
-				writer.WriteHeader(http.StatusForbidden)
-				return
-			}
-			handler.ServeHTTP(writer, request)
-		})
+		if !authorized {
+			gctx.AbortWithStatus(http.StatusForbidden)
+			return
+		}
+		gctx.Next()
 	}
 }
 

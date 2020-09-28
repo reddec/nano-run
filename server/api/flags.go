@@ -1,6 +1,6 @@
 // +build !linux
 
-package internal
+package api
 
 import "os/exec"
 

@@ -1,8 +1,7 @@
-package server
+package runner
 
 import (
 	"context"
-	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -10,12 +9,16 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"gopkg.in/yaml.v2"
 
+	"nano-run/server"
+	"nano-run/server/ui"
 	"nano-run/worker"
 )
 
 type Config struct {
+	UIDirectory      string        `yaml:"ui_directory"`
 	WorkingDirectory string        `yaml:"working_directory"`
 	ConfigDirectory  string        `yaml:"config_directory"`
 	Bind             string        `yaml:"bind"`
@@ -37,6 +40,7 @@ func DefaultConfig() Config {
 	cfg.Bind = defaultBind
 	cfg.WorkingDirectory = filepath.Join("run")
 	cfg.ConfigDirectory = filepath.Join("conf.d")
+	cfg.UIDirectory = filepath.Join("ui")
 	cfg.GracefulShutdown = defaultGracefulShutdown
 	return cfg
 }
@@ -76,17 +80,28 @@ func (cfg Config) SaveFile(file string) error {
 }
 
 func (cfg Config) Create(global context.Context) (*Server, error) {
-	units, err := Units(cfg.ConfigDirectory)
+	units, err := server.Units(cfg.ConfigDirectory)
 	if err != nil {
 		return nil, err
 	}
-	workers, err := Workers(cfg.WorkingDirectory, units)
+	workers, err := server.Workers(cfg.WorkingDirectory, units)
 	if err != nil {
 		return nil, err
 	}
 	ctx, cancel := context.WithCancel(global)
+
+	router := gin.Default()
+	server.Attach(router.Group("/api/"), units, workers)
+	ui.Attach(router.Group("/ui/"), units, cfg.UIDirectory)
+	router.Group("/", func(gctx *gin.Context) {
+		gctx.Redirect(http.StatusTemporaryRedirect, "ui")
+	})
+	//router.Path("/").Methods("GET").HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+	//	http.Redirect(writer, request, "ui", http.StatusTemporaryRedirect)
+	//})
+
 	srv := &Server{
-		Handler: Handler(units, workers),
+		Handler: router,
 		workers: workers,
 		units:   units,
 		done:    make(chan struct{}),
@@ -132,29 +147,16 @@ func (cfg Config) Run(global context.Context) error {
 	return err
 }
 
-func limitRequest(maxSize int64, handler http.Handler) http.Handler {
-	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		body := request.Body
-		defer body.Close()
-		if request.ContentLength > maxSize {
-			http.Error(writer, "too big request", http.StatusBadRequest)
-			return
-		}
-
-		limiter := io.LimitReader(request.Body, maxSize)
-		request.Body = ioutil.NopCloser(limiter)
-		handler.ServeHTTP(writer, request)
-	})
-}
-
 type Server struct {
 	http.Handler
 	workers []*worker.Worker
-	units   []Unit
+	units   []server.Unit
 	cancel  func()
 	done    chan struct{}
 	err     error
 }
+
+func (srv *Server) Units() []server.Unit { return srv.units }
 
 func (srv *Server) Close() {
 	for _, wrk := range srv.workers {
@@ -169,7 +171,7 @@ func (srv *Server) Err() error {
 }
 
 func (srv *Server) run(ctx context.Context) {
-	err := Run(ctx, srv.workers)
+	err := server.Run(ctx, srv.workers)
 	if err != nil {
 		log.Println("workers stopped:", err)
 	}

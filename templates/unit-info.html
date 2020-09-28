@@ -1,0 +1,18 @@
+<html>
+<body>
+<div>
+    <a href="unit/{{.Unit.Name}}">
+        <h2>{{.Unit.Name}}</h2>
+        {{if .Unit.Secured}}
+            secured
+        {{end}}
+    </a>
+    <p>
+        <span class="unit-mode unit-mode-{{.Unit.Mode}}">{{.Unit.Mode}}</span>,
+        <span class="unit-mode unit-mode-workers">{{.Unit.Workers}}</span>,
+        <span class="unit-mode unit-mode-interval">{{.Unit.Interval}}</span>,
+        <span class="unit-mode unit-mode-timeout">{{.Unit.Timeout}}</span>,
+    </p>
+</div>
+</body>
+</html>

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -17,10 +18,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gorilla/mux"
+	"github.com/gin-gonic/gin"
 	"gopkg.in/yaml.v2"
 
-	"nano-run/server/internal"
+	"nano-run/server/api"
 	"nano-run/worker"
 )
 
@@ -111,6 +112,15 @@ func (cfg Unit) SaveFile(file string) error {
 	return ioutil.WriteFile(file, data, 0600)
 }
 
+func (cfg Unit) Name() string { return cfg.name }
+
+func (cfg Unit) Secured() bool {
+	return cfg.Authorization.Basic.Enable ||
+		cfg.Authorization.HeaderToken.Enable ||
+		cfg.Authorization.QueryToken.Enable ||
+		cfg.Authorization.JWT.Enable
+}
+
 func Units(configsDir string) ([]Unit, error) {
 	var configs []Unit
 	err := filepath.Walk(configsDir, func(path string, info os.FileInfo, err error) error {
@@ -164,14 +174,17 @@ func Workers(workdir string, configurations []Unit) ([]*worker.Worker, error) {
 }
 
 func Handler(units []Unit, workers []*worker.Worker) http.Handler {
-	router := mux.NewRouter()
-	for i, unit := range units {
-		prefix := "/" + unit.name + "/"
-		subRouter := router.PathPrefix(prefix).Subrouter()
-		subRouter.Use(unit.enableAuthorization())
-		internal.Expose(subRouter, workers[i])
-	}
+	router := gin.New()
+	Attach(router, units, workers)
 	return router
+}
+
+func Attach(router gin.IRouter, units []Unit, workers []*worker.Worker) {
+	for i, unit := range units {
+		group := router.Group("/" + unit.name + "/")
+		group.Use(unit.enableAuthorization())
+		api.Expose(group, workers[i])
+	}
 }
 
 func Run(global context.Context, workers []*worker.Worker) error {
@@ -262,4 +275,19 @@ func makeEnvList(content map[string]string) []string {
 		ans = append(ans, k+"="+v)
 	}
 	return ans
+}
+
+func limitRequest(maxSize int64, handler http.Handler) http.Handler {
+	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		body := request.Body
+		defer body.Close()
+		if request.ContentLength > maxSize {
+			http.Error(writer, "too big request", http.StatusBadRequest)
+			return
+		}
+
+		limiter := io.LimitReader(request.Body, maxSize)
+		request.Body = ioutil.NopCloser(limiter)
+		handler.ServeHTTP(writer, request)
+	})
 }

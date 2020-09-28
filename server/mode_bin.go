@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"nano-run/server/internal"
+	"nano-run/server/api"
 )
 
 type markerResponse struct {
@@ -74,7 +74,7 @@ func (bh *binHandler) ServeHTTP(writer http.ResponseWriter, request *http.Reques
 	cmd.Stdin = request.Body
 	cmd.Stdout = marker
 	cmd.Env = env
-	internal.SetBinFlags(cmd)
+	api.SetBinFlags(cmd)
 	err := cmd.Run()
 
 	if codeReset, ok := writer.(interface{ Status(status int) }); ok && err != nil {

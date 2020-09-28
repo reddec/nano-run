@@ -1,0 +1,17 @@
+<html>
+<body>
+{{range .Units}}
+    <div>
+        <a href="unit/{{.Name}}">
+            <h2>{{.Name}}</h2>
+        </a>
+        <p>
+            <span class="unit-mode unit-mode-{{.Mode}}">{{.Mode}}</span>,
+            <span class="unit-mode unit-mode-workers">{{.Workers}}</span>,
+            <span class="unit-mode unit-mode-interval">{{.Interval}}</span>,
+            <span class="unit-mode unit-mode-timeout">{{.Timeout}}</span>,
+        </p>
+    </div>
+{{end}}
+</body>
+</html>
