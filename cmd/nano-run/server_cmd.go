@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"nano-run/server"
+	"nano-run/server/runner"
 )
 
 type serverCmd struct {
@@ -24,7 +25,7 @@ func (cmd *serverInitCmd) Execute([]string) error {
 	if err != nil {
 		return err
 	}
-	cfg := server.DefaultConfig()
+	cfg := runner.DefaultConfig()
 	err = cfg.SaveFile(filepath.Join(cmd.Directory, cmd.ConfigFile))
 	if err != nil {
 		return err
@@ -53,7 +54,7 @@ type serverRunCmd struct {
 }
 
 func (cmd *serverRunCmd) Execute([]string) error {
-	cfg := server.DefaultConfig()
+	cfg := runner.DefaultConfig()
 	err := cfg.LoadFile(cmd.Config)
 	if os.IsNotExist(err) && !cmd.Fail {
 		log.Println("no config file found - using transient default configuration")

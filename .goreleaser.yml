@@ -40,6 +40,12 @@ nfpms:
       "bundle/debian/server.yaml": "/etc/nano-run/server.yaml"
     files:
       "bundle/debian/nano-run.service": "/etc/systemd/system/nano-run.service"
+      "templates/**": "/var/nano-run/ui"
+archives:
+  - files:
+      - "templates/**"
+    wrap_in_directory: true
+
 uploads:
   - name: bintray
     method: PUT
@@ -55,6 +61,7 @@ dockers:
     dockerfile: Dockerfile
     extra_files:
       - bundle/docker/server.yaml
+      - templates
     build_flag_templates:
       - "--label=org.opencontainers.image.created={{.Date}}"
       - "--label=org.opencontainers.image.title={{.ProjectName}}"

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"nano-run/server"
+	"nano-run/server/runner"
 )
 
 type runCmd struct {
@@ -31,7 +32,7 @@ func (cfg *runCmd) Execute([]string) error {
 		return err
 	}
 	defer os.RemoveAll(tmpDir)
-	srv := server.DefaultConfig()
+	srv := runner.DefaultConfig()
 	srv.Bind = cfg.Bind
 	srv.WorkingDirectory = cfg.Directory
 	srv.ConfigDirectory = tmpDir

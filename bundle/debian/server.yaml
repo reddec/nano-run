@@ -1,5 +1,6 @@
 # Location to store tasks, blobs and queues
 working_directory: /var/nano-run
+ui_directory: /var/nano-run/ui
 config_directory: /etc/nano-run/conf.d
 bind: 127.0.0.1:8989
 graceful_shutdown: 5s
