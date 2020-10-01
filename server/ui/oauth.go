@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -36,7 +37,7 @@ func (cfg OAuth2) Attach(router gin.IRouter, storage SessionStorage) {
 
 		token, err := cfg.Config.Exchange(gctx.Request.Context(), gctx.Query("code"))
 		if err != nil {
-			gctx.AbortWithError(http.StatusForbidden, err)
+			_ = gctx.AbortWithError(http.StatusForbidden, err)
 			return
 		}
 
@@ -47,9 +48,9 @@ func (cfg OAuth2) Attach(router gin.IRouter, storage SessionStorage) {
 
 		sessionID := uuid.New().String()
 		session := newOAuthSession(token)
-		err = session.fetchLogin(cfg.ProfileURL, cfg.LoginField)
+		err = session.fetchLogin(gctx.Request.Context(), cfg.ProfileURL, cfg.LoginField)
 		if err != nil {
-			gctx.AbortWithError(http.StatusForbidden, err)
+			_ = gctx.AbortWithError(http.StatusForbidden, err)
 			return
 		}
 
@@ -86,12 +87,12 @@ func (ss *oauthSession) Valid() bool {
 	return token.Valid()
 }
 
-func (ss *oauthSession) GetJSON(url string, response interface{}) error {
+func (ss *oauthSession) GetJSON(ctx context.Context, url string, response interface{}) error {
 	t, err := ss.token.Token()
 	if err != nil {
 		return err
 	}
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return err
 	}
@@ -107,9 +108,9 @@ func (ss *oauthSession) GetJSON(url string, response interface{}) error {
 	return json.NewDecoder(res.Body).Decode(response)
 }
 
-func (ss *oauthSession) fetchLogin(url string, field string) error {
+func (ss *oauthSession) fetchLogin(ctx context.Context, url string, field string) error {
 	var profile = make(map[string]interface{})
-	err := ss.GetJSON(url, &profile)
+	err := ss.GetJSON(ctx, url, &profile)
 	if err != nil {
 		return err
 	}

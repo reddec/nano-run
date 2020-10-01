@@ -482,19 +482,20 @@ func (mgr *Worker) restoreRequest(ctx context.Context, requestID string, info *m
 	return req, nil
 }
 
-func encodeID(nsId byte, id uint64) string {
+func encodeID(nsID byte, id uint64) string {
 	var data [9]byte
-	data[0] = nsId
+	data[0] = nsID
 	binary.BigEndian.PutUint64(data[1:], id)
 	return strings.ToUpper(hex.EncodeToString(data[:]))
 }
 
 func decodeID(val string) (byte, uint64, error) {
+	const idLen = 1 + 8
 	hx, err := hex.DecodeString(val)
 	if err != nil {
 		return 0, 0, err
 	}
-	if len(hx) != 9 {
+	if len(hx) != idLen {
 		return 0, 0, errors.New("too short")
 	}
 	n := binary.BigEndian.Uint64(hx[1:])

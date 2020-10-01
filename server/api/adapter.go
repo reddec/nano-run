@@ -26,7 +26,7 @@ func Expose(router gin.IRouter, wrk *worker.Worker) {
 		id, err := wrk.Enqueue(gctx.Request)
 		if err != nil {
 			log.Println("failed to enqueue:", err)
-			gctx.AbortWithError(http.StatusInternalServerError, err)
+			_ = gctx.AbortWithError(http.StatusInternalServerError, err)
 			return
 		}
 		gctx.Header("X-Correlation-Id", id)
@@ -87,7 +87,7 @@ func (wh *workerHandler) retry(gctx *gin.Context) {
 	id, err := wh.wrk.Retry(gctx.Request.Context(), requestID)
 	if err != nil {
 		log.Println("failed to retry:", err)
-		gctx.AbortWithError(http.StatusInternalServerError, err)
+		_ = gctx.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 	gctx.Header("X-Correlation-Id", id)
@@ -106,7 +106,7 @@ func (wh *workerHandler) completeRequest(gctx *gin.Context) {
 		err = wh.wrk.Meta().Complete(requestID)
 		if err != nil {
 			log.Println("failed to mark request as complete:", err)
-			gctx.AbortWithError(http.StatusInternalServerError, err)
+			_ = gctx.AbortWithError(http.StatusInternalServerError, err)
 			return
 		}
 	}
@@ -154,7 +154,7 @@ func (wh *workerHandler) getAttempt(gctx *gin.Context) {
 	body, err := wh.wrk.Blobs().Get(attempt.ID)
 	if err != nil {
 		log.Println("failed to get body:", err)
-		gctx.AbortWithError(http.StatusInternalServerError, err)
+		_ = gctx.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 	defer body.Close()
@@ -183,7 +183,7 @@ func (wh *workerHandler) getRequest(gctx *gin.Context) {
 	f, err := wh.wrk.Blobs().Get(requestID)
 	if err != nil {
 		log.Println("failed to get data:", err)
-		gctx.AbortWithError(http.StatusInternalServerError, err)
+		_ = gctx.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 	defer f.Close()

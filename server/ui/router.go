@@ -81,7 +81,7 @@ func (ui *uiRouter) unitRequestAttemptResult(gctx *gin.Context) {
 
 	f, err := info.Worker.Blobs().Get(attemptID)
 	if err != nil {
-		gctx.AbortWithError(http.StatusNotFound, err)
+		_ = gctx.AbortWithError(http.StatusNotFound, err)
 		return
 	}
 	defer f.Close()
@@ -102,10 +102,10 @@ func (ui *uiRouter) unitRequestAttemptInfo(gctx *gin.Context) {
 		gctx.AbortWithStatus(http.StatusNotFound)
 		return
 	}
-	requestId := gctx.Param("request")
-	request, err := info.Worker.Meta().Get(requestId)
+	requestID := gctx.Param("request")
+	request, err := info.Worker.Meta().Get(requestID)
 	if err != nil {
-		gctx.AbortWithError(http.StatusNotFound, err)
+		_ = gctx.AbortWithError(http.StatusNotFound, err)
 		return
 	}
 
@@ -130,7 +130,7 @@ func (ui *uiRouter) unitRequestAttemptInfo(gctx *gin.Context) {
 			baseResponse: base(gctx),
 			unitInfo:     info,
 			Request:      request,
-			RequestID:    requestId,
+			RequestID:    requestID,
 		},
 		AttemptID: attemptID,
 		Attempt:   attempt,
@@ -151,10 +151,10 @@ func (ui *uiRouter) unitRequestInfo(gctx *gin.Context) {
 		gctx.AbortWithStatus(http.StatusNotFound)
 		return
 	}
-	requestId := gctx.Param("request")
-	request, err := info.Worker.Meta().Get(requestId)
+	requestID := gctx.Param("request")
+	request, err := info.Worker.Meta().Get(requestID)
 	if err != nil {
-		gctx.AbortWithError(http.StatusNotFound, err)
+		_ = gctx.AbortWithError(http.StatusNotFound, err)
 		return
 	}
 
@@ -162,7 +162,7 @@ func (ui *uiRouter) unitRequestInfo(gctx *gin.Context) {
 		baseResponse: base(gctx),
 		unitInfo:     info,
 		Request:      request,
-		RequestID:    requestId,
+		RequestID:    requestID,
 	})
 }
 
@@ -178,7 +178,7 @@ func (ui *uiRouter) unitRequestRetry(gctx *gin.Context) {
 	id, err := item.Worker.Retry(gctx.Request.Context(), requestID)
 	if err != nil {
 		log.Println("failed to retry:", err)
-		gctx.AbortWithError(http.StatusInternalServerError, err)
+		_ = gctx.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
@@ -195,14 +195,14 @@ func (ui *uiRouter) unitRequestPayload(gctx *gin.Context) {
 	requestID := gctx.Param("request")
 	info, err := item.Worker.Meta().Get(requestID)
 	if !ok {
-		gctx.AbortWithError(http.StatusNotFound, err)
+		_ = gctx.AbortWithError(http.StatusNotFound, err)
 		return
 	}
 	gctx.Header("Last-Modified", info.CreatedAt.Format(time.RFC850))
 	f, err := item.Worker.Blobs().Get(requestID)
 	if err != nil {
 		log.Println("failed to get data:", err)
-		gctx.AbortWithError(http.StatusInternalServerError, err)
+		_ = gctx.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 	defer f.Close()
@@ -242,15 +242,15 @@ func (ui *uiRouter) unitInvoke(gctx *gin.Context) {
 		return
 	}
 	data := gctx.PostForm("body")
-	req, err := http.NewRequest(http.MethodPost, "/", bytes.NewBufferString(data))
+	req, err := http.NewRequestWithContext(gctx.Request.Context(), http.MethodPost, "/", bytes.NewBufferString(data))
 	if err != nil {
-		gctx.AbortWithError(http.StatusInternalServerError, err)
+		_ = gctx.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
 	id, err := info.Worker.Enqueue(req)
 	if err != nil {
-		gctx.AbortWithError(http.StatusInternalServerError, err)
+		_ = gctx.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 	gctx.Redirect(http.StatusSeeOther, base(gctx).Rel("/unit", name, "request", id))
