@@ -1,0 +1,28 @@
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+</head>
+<body>
+
+<div class="container h-100">
+    <div class="row align-items-center justify-content-center h-100">
+        <div class="col-md-6">
+            <div class="card card-block">
+                <div class="card-body">
+                    <h5 class="card-title">Login to the system</h5>
+                    <div class="card-text">
+                        {{with .Auth.OAuth2}}
+                            <a href="oauth2/login" class="btn btn-primary">Login by {{.Title}}</a>
+                        {{end}}
+                    </div>
+                </div>
+            </div>
+            <br/>
+        </div>
+    </div>
+</div>
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+      integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
+</body>
+</html>

@@ -1,0 +1,178 @@
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+</head>
+<body>
+<div class="container">
+    <nav class="navbar navbar-expand-sm navbar-light bg-light">
+        <a class="navbar-brand" href="{{.Rel "/"}}">Nano-Run</a>
+        <div class="collapse navbar-collapse">
+            <ul class="navbar-nav mr-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="{{.Rel "/unit/"}}">All units</a>
+                </li>
+                {{if .Authorized}}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{.Rel "/auth/logout"}}">Logout</a>
+                    </li>
+                {{end}}
+            </ul>
+        </div>
+        <span class="navbar-text">{{.Login}}</span>
+    </nav>
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{.Rel "/unit/"}}" title="all units">units</a></li>
+            <li class="breadcrumb-item"><a href="{{.Rel "/unit" .Unit.Name}}" title="unit">{{.Unit.Name}}</a></li>
+            <li class="breadcrumb-item active" title="request">{{.RequestID}}</li>
+        </ol>
+    </nav>
+    <div class="row">
+        <div class="col">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Request</h5>
+                    <h6 class="card-subtitle mb-2 text-muted">Meta info</h6>
+                    <div class="card-text">
+                        <dl class="row">
+                            <dt class="col-sm-3">ID</dt>
+                            <dd class="col-sm-9">{{.RequestID}}</dd>
+                            <dt class="col-sm-3">Created at</dt>
+                            <dd class="col-sm-9">{{.Request.CreatedAt.Format "02 Jan 06 15:04:05.000 MST"}}</dd>
+                            <dt class="col-sm-3">Complete at</dt>
+                            <dd class="col-sm-9">
+                                {{if .Request.Complete}}
+                                    {{.Request.CompleteAt.Format "02 Jan 06 15:04:05.000 MST"}}
+                                {{else}}
+                                    in progress
+                                {{end}}
+                            </dd>
+                            <dt class="col-sm-3">URI</dt>
+                            <dd class="col-sm-9">{{.Request.URI}}</dd>
+                            <dt class="col-sm-3">Method</dt>
+                            <dd class="col-sm-9">{{.Request.Method}}</dd>
+                        </dl>
+                    </div>
+                    <h6 class="card-subtitle mb-2 text-muted">Headers</h6>
+                    <div class="card-text">
+                        <div class="table-responsive">
+                            <table class="table table-borderless table-striped">
+                                <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <td>Value</td>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {{range $k,$v := .Request.Headers}}
+                                    <tr>
+                                        <td>{{$k}}</td>
+                                        <td>
+                                            {{$v | join ", "}}
+                                        </td>
+                                    </tr>
+                                {{end}}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <form style="display: inline-block" method="post">
+                        <button type="submit" class="btn btn-secondary">retry</button>
+                    </form>
+                    <button type="button" onclick="loadResult()" class="btn btn-primary" id="load-btn">show payload
+                    </button>
+                    <a target="_blank" href="payload" class="btn btn-light">open payload in a new tab</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="load" style="display: none">
+        <br/>
+        <div class="row">
+            <div class="col">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Payload</h5>
+                        <div class="card-text">
+                            <div class="progress" style="display: none" id="progress">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar"
+                                     aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"
+                                     style="width: 100%"></div>
+                            </div>
+                            <pre id="result" style="display: none"></pre>
+                            <div class="alert alert-danger" id="error" style="display: none">
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <br/>
+    <div class="row">
+        <div class="col">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Attempts</h5>
+                    <div class="card-test">
+                        <div class="table-responsive">
+                            <table class="table table-borderless table-striped">
+                                <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Time</th>
+                                    <th>Code</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {{range .Request.Attempts}}
+                                    <tr>
+                                        <td><a href="attempt/{{.ID}}/">{{.ID}}</a></td>
+                                        <td>{{.CreatedAt.Format "02 Jan 06 15:04:05.000 MST"}}</td>
+                                        <td>{{.Code}}</td>
+                                    </tr>
+                                {{end}}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    function loadResult() {
+        const btn = document.getElementById("load-btn")
+        const progress = document.getElementById("progress")
+        const result = document.getElementById("result")
+        const error = document.getElementById("error")
+        const load = document.getElementById("load")
+        load.style.display = null;
+        btn.style.display = 'none'
+        progress.style.display = 'visible'
+
+        fetch("payload").then(function (res) {
+            if (res.status === 200) {
+                return res.text()
+            } else {
+                throw res.statusText
+            }
+        }).then(function (txt) {
+            result.innerText = txt;
+            result.style.display = null
+        }).catch(function (err) {
+            error.innerText = err
+            error.style.display = null
+        }).finally(function () {
+            progress.style.display = 'none'
+        })
+    }
+</script>
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+      integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
+</body>
+</html>

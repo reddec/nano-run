@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/Masterminds/sprig"
 	"github.com/gin-gonic/gin"
 	"gopkg.in/yaml.v2"
 
@@ -18,11 +19,12 @@ import (
 )
 
 type Config struct {
-	UIDirectory      string        `yaml:"ui_directory"`
-	WorkingDirectory string        `yaml:"working_directory"`
-	ConfigDirectory  string        `yaml:"config_directory"`
-	Bind             string        `yaml:"bind"`
-	GracefulShutdown time.Duration `yaml:"graceful_shutdown"`
+	UIDirectory      string           `yaml:"ui_directory"`
+	WorkingDirectory string           `yaml:"working_directory"`
+	ConfigDirectory  string           `yaml:"config_directory"`
+	Bind             string           `yaml:"bind"`
+	GracefulShutdown time.Duration    `yaml:"graceful_shutdown"`
+	Auth             ui.Authorization `yaml:"auth,omitempty"`
 	TLS              struct {
 		Enable bool   `yaml:"enable"`
 		Cert   string `yaml:"cert"`
@@ -89,15 +91,20 @@ func (cfg Config) Create(global context.Context) (*Server, error) {
 		return nil, err
 	}
 	ctx, cancel := context.WithCancel(global)
-
 	router := gin.Default()
-	router.LoadHTMLGlob(filepath.Join(cfg.UIDirectory, "*.html"))
-	router.Static("/static", filepath.Join(cfg.UIDirectory, "static"))
-	server.Attach(router.Group("/api/"), units, workers)
-	ui.Attach(router.Group("/ui/"), units)
+	router.SetFuncMap(sprig.HtmlFuncMap())
+	uiPath := filepath.Join(cfg.UIDirectory, "*.html")
+	if v, err := filepath.Glob(uiPath); err == nil && len(v) > 0 {
+		// little hack to prevent panic on empty UI
+		router.LoadHTMLGlob(uiPath)
+	}
 	router.GET("/", func(gctx *gin.Context) {
 		gctx.Redirect(http.StatusTemporaryRedirect, "ui")
 	})
+	uiGroup := router.Group("/ui/")
+	ui.Attach(uiGroup, units, workers, cfg.Auth)
+	uiGroup.Static("/static/", filepath.Join(cfg.UIDirectory, "static"))
+	server.Attach(router.Group("/api/"), units, workers)
 
 	srv := &Server{
 		Handler: router,
@@ -120,7 +127,7 @@ func (cfg Config) Run(global context.Context) error {
 	}
 	defer srv.Close()
 
-	server := http.Server{
+	httpServer := http.Server{
 		Addr:    cfg.Bind,
 		Handler: srv,
 	}
@@ -131,15 +138,15 @@ func (cfg Config) Run(global context.Context) error {
 		defer cancel()
 		<-ctx.Done()
 		t, c := context.WithTimeout(context.Background(), cfg.GracefulShutdown)
-		_ = server.Shutdown(t)
+		_ = httpServer.Shutdown(t)
 		c()
 		close(done)
 	}()
 
 	if cfg.TLS.Enable {
-		err = server.ListenAndServeTLS(cfg.TLS.Cert, cfg.TLS.Key)
+		err = httpServer.ListenAndServeTLS(cfg.TLS.Cert, cfg.TLS.Key)
 	} else {
-		err = server.ListenAndServe()
+		err = httpServer.ListenAndServe()
 	}
 	cancel()
 	<-done

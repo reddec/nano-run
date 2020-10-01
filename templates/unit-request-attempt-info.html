@@ -1,0 +1,130 @@
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+</head>
+<body>
+<div class="container">
+    <nav class="navbar navbar-expand-sm navbar-light bg-light">
+        <a class="navbar-brand" href="{{.Rel "/"}}">Nano-Run</a>
+        <div class="collapse navbar-collapse">
+            <ul class="navbar-nav mr-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="{{.Rel "/unit/"}}">All units</a>
+                </li>
+                {{if .Authorized}}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{.Rel "/auth/logout"}}">Logout</a>
+                    </li>
+                {{end}}
+            </ul>
+        </div>
+        <span class="navbar-text">{{.Login}}</span>
+    </nav>
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{.Rel "/unit/"}}" title="all units">units</a></li>
+            <li class="breadcrumb-item"><a href="{{.Rel "/unit" .Unit.Name}}" title="unit">{{.Unit.Name}}</a></li>
+            <li class="breadcrumb-item"><a href="{{.Rel "/unit" .Unit.Name "request" .RequestID}}"
+                                           title="request">{{.RequestID}}</a></li>
+            <li class="breadcrumb-item active" title="attempt">{{.AttemptID}}</li>
+        </ol>
+    </nav>
+    <div class="row">
+        <div class="col">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Attempt</h5>
+                    <h6 class="card-subtitle mb-2 text-muted">Meta info</h6>
+                    <div class="card-text">
+                        <dl class="row">
+                            <dt class="col-sm-3">ID</dt>
+                            <dd class="col-sm-9">{{.AttemptID}}</dd>
+                            <dt class="col-sm-3">Created at</dt>
+                            <dd class="col-sm-9">{{.Attempt.CreatedAt.Format "02 Jan 06 15:04:05.000 MST"}}</dd>
+                            <dt class="col-sm-3">Code</dt>
+                            <dd class="col-sm-9">{{.Attempt.Code}}</dd>
+                        </dl>
+                    </div>
+                    <h6 class="card-subtitle mb-2 text-muted">Headers</h6>
+                    <div class="card-text">
+                        <div class="table-responsive">
+                            <table class="table table-borderless table-striped">
+                                <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Value</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {{range $k, $v := .Attempt.Headers}}
+                                    <tr>
+                                        <td>{{$k}}</td>
+                                        <td>{{$v | join ", "}}</td>
+                                    </tr>
+                                {{end}}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <button type="button" onclick="loadResult()" class="btn btn-primary" id="load-btn">show result
+                    </button>
+                    <a target="_blank" href="result" class="btn btn-light" class="btn btn-light">open result in a new
+                        tab</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <br/>
+    <div class="row" id="load" style="display: none">
+        <div class="col">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Result</h5>
+                    <div class="card-text">
+                        <div class="progress" style="display: none" id="progress">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar"
+                                 aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="width: 100%"></div>
+                        </div>
+                        <pre id="result" style="display: none"></pre>
+                        <div class="alert alert-danger" id="error" style="display: none">
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    function loadResult() {
+        const btn = document.getElementById("load-btn")
+        const progress = document.getElementById("progress")
+        const result = document.getElementById("result")
+        const error = document.getElementById("error")
+        const load = document.getElementById("load")
+        load.style.display = null;
+        btn.style.display = 'none'
+        progress.style.display = 'visible'
+
+        fetch("result").then(function (res) {
+            if (res.status === 200) {
+                return res.text()
+            } else {
+                throw res.statusText
+            }
+        }).then(function (txt) {
+            result.innerText = txt;
+            result.style.display = null
+        }).catch(function (err) {
+            error.innerText = err
+            error.style.display = null
+        }).finally(function () {
+            progress.style.display = 'none'
+        })
+    }
+</script>
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+      integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
+</body>
+</html>

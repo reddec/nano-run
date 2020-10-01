@@ -1,106 +1,217 @@
 <html lang="en">
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="https://unpkg.com/mvp.css">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 </head>
 <body>
-<main>
-    <section>
-        <header>
-            <h2><a href="../units">Units</a> :: {{.Unit.Name}}</h2>
-            <h4>
-            <code><script>document.write((new URL("../../api/{{.Unit.Name}}/", window.location).href))</script></code>
-            </h4>
-        </header>
-        <aside>
-            <h3>Configuration</h3>
-            <ul>
-                {{with .Unit}}
-                    <li>
-                        <b>Mode: </b>{{.Mode}}
-                    </li>
-                    <li>
-                        <b>Concurrency: </b>{{.Workers}}
-                    </li>
-                    <li>
-                        <b>Attempts: </b>{{.Attempts}}
-                    </li>
-                    <li>
-                        <b>Interval: </b>{{.Interval}}
-                    </li>
-                    <li>
-                        <b>Timeout: </b>
-                        {{with .Timeout}}
-                            {{.}}
-                        {{else}}
-                            ∞
-                        {{end}}
-                    </li>
-                    <li>
-                        <b>Max request size: </b>
-                        {{with .MaxRequest}}
-                            {{.}}
-                        {{else}}
-                            ∞
-                        {{end}}
-                    </li>
-                    <li>
-                        <b>Working directory: </b>
-                        {{with .WorkDir}}
-                            <sup>static</sup>
-                            <span style="overflow-x: auto; word-break: break-all">{{.}}</span>
-                        {{else}}
-                            <i>dynamic</i>
-                        {{end}}
+<div class="container">
+    <nav class="navbar navbar-expand-sm navbar-light bg-light">
+        <a class="navbar-brand" href="{{.Rel "/"}}">Nano-Run</a>
+        <div class="collapse navbar-collapse">
+            <ul class="navbar-nav mr-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="{{.Rel "/unit/"}}">All units</a>
+                </li>
+                {{if .Authorized}}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{.Rel "/auth/logout"}}">Logout</a>
                     </li>
                 {{end}}
             </ul>
-        </aside>
-        <aside>
-            <h3>Environment</h3>
-            <table>
-                <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Value</th>
-                </tr>
-                </thead>
-                <tbody>
-                {{range $k,$v := .Unit.Environment}}
-                    <tr>
-                        <td>
-                            <pre>{{$k}}</pre>
-                        </td>
-                        <td>{{$v}}</td>
-                    </tr>
-                {{end}}
-                </tbody>
-            </table>
-        </aside>
-        {{with .Unit.Authorization}}
-            <aside>
-                <h3>Authorization{{if not $.Unit.Secured}} ⚠️{{end}}</h3>
-                <table>
-                    <tr>
-                        <th>JWT</th>
-                        <td>{{if .JWT.Enable}}✅{{else}}❌{{end}}</td>
-                    </tr>
-                    <tr>
-                        <th>Token in query</th>
-                        <td>{{if .QueryToken.Enable}}✅{{else}}❌{{end}}</td>
-                    </tr>
-                    <tr>
-                        <th>Token in header</th>
-                        <td>{{if .HeaderToken.Enable}}✅{{else}}❌{{end}}</td>
-                    </tr>
-                    <tr>
-                        <th>Basic auth</th>
-                        <td>{{if .Basic.Enable}}✅{{else}}❌{{end}}</td>
-                    </tr>
-                </table>
-            </aside>
-        {{end}}
-    </section>
-</main>
+        </div>
+        <span class="navbar-text">{{.Login}}</span>
+    </nav>
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{.Rel "/unit/"}}" title="all units">units</a></li>
+            <li class="breadcrumb-item active" title="unit">{{.Unit.Name}}</li>
+        </ol>
+    </nav>
+    <div class="row">
+        <div class="col">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Unit {{.Unit.Name}}</h5>
+                    <h6 class="card-subtitle mb-2 text-muted">Configuration</h6>
+                    <div class="card-text">
+                        <dl class="row">
+                            <dt class="col-sm-3">API endpoint</dt>
+                            <dd class="col-sm-9">
+                                <code>
+                                    <noscript>JS required to detect API url</noscript>
+                                    <script>document.write((new URL("../../../api/{{.Unit.Name}}/", window.location).href))</script>
+                                </code>
+                            </dd>
+                            <dt class="col-sm-3">Mode</dt>
+                            <dd class="col-sm-9">{{.Unit.Mode}}</dd>
+                            <dt class="col-sm-3">Concurrency</dt>
+                            <dd class="col-sm-9">{{.Unit.Workers}}</dd>
+                            <dt class="col-sm-3">Attempts</dt>
+                            <dd class="col-sm-9">{{.Unit.Attempts}}</dd>
+                            <dt class="col-sm-3">Interval</dt>
+                            <dd class="col-sm-9">{{.Unit.Interval}}</dd>
+                            <dt class="col-sm-3">Timeout</dt>
+                            <dd class="col-sm-9">
+                                {{with .Unit.Timeout}}
+                                    {{.}}
+                                {{else}}
+                                    ∞
+                                {{end}}
+                            </dd>
+                            <dt class="col-sm-3">Max request size</dt>
+                            <dd class="col-sm-9">
+                                {{with .Unit.MaxRequest}}
+                                    {{.}}
+                                {{else}}
+                                    ∞
+                                {{end}}
+                            </dd>
+                            <dt class="col-sm-3">Working directory</dt>
+                            <dd class="col-sm-9">
+                                {{with .Unit.WorkDir}}
+                                    <sup>static</sup>
+                                    <span style="overflow-x: auto; word-break: break-all">{{.}}</span>
+                                {{else}}
+                                    <i>dynamic</i>
+                                {{end}}
+                            </dd>
+                            {{if or (eq .Unit.Mode "bin") (eq .Unit.Mode "cgi")}}
+                                <dt class="col-sm-3">Command</dt>
+                                <dd class="col-sm-9">{{.Unit.Command}}</dd>
+                                <dt class="col-sm-3">Shell</dt>
+                                <dd class="col-sm-9">{{.Unit.Shell}}</dd>
+                            {{end}}
+                        </dl>
+                    </div>
+                    <h6 class="card-subtitle mb-2 text-muted">Environment</h6>
+                    <div class="card-text">
+                        {{with .Unit.Environment}}
+                            <div class="table-responsive">
+                                <table class="table table-borderless table-striped">
+                                    <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Value</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    {{range $k,$v := .}}
+                                        <tr>
+                                            <td>
+                                                <pre>{{$k}}</pre>
+                                            </td>
+                                            <td>{{$v}}</td>
+                                        </tr>
+                                    {{end}}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {{else}}
+                            no custom variables defined
+                        {{end}}
+                    </div>
+                    <br/>
+                    <h6 class="card-subtitle mb-2 text-muted">Authorization</h6>
+                    <div class="card-text">
+                        {{if not $.Unit.Secured}}
+                            no authorization defined
+                        {{else}}
+                            {{with .Unit.Authorization}}
+                                <dl class="row">
+                                    {{if .JWT.Enable}}
+                                        <dt class="col-sm-3">JWT</dt>
+                                        <dd class="col-sm-9">in
+                                            <pre>{{.JWT.Header}}</pre>
+                                            header
+                                        </dd>
+                                    {{end}}
+                                    {{if .QueryToken.Enable}}
+                                        <dt class="col-sm-3">Query token</dt>
+                                        <dd class="col-sm-9">in
+                                            <pre>{{.QueryToken.Param}}</pre>
+                                            param
+                                        </dd>
+                                    {{end}}
+                                    {{if .HeaderToken.Enable}}
+                                        <dt class="col-sm-3">Header token</dt>
+                                        <dd class="col-sm-9">in
+                                            <pre>{{.HeaderToken.Header}}</pre>
+                                            header
+                                        </dd>
+                                    {{end}}
+                                    {{if .Basic.Enable}}
+                                        <dt class="col-sm-3">Basic</dt>
+                                        <dd class="col-sm-9">{{.Basic.Users | keys | join ", "}}</dd>
+                                    {{end}}
+                                </dl>
+                            {{end}}
+                        {{end}}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <br/>
+    <div class="row">
+        <div class="col">
+            <form method="post">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Try</h5>
+                        <div class="card-text">
+                            <textarea class="form-control" name="body" placeholder="request payload"></textarea>
+                        </div>
+                        <br/>
+                        <button class="btn btn-primary" type="submit">send</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    <br/>
+    <div class="row">
+        <div class="col">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Last 50 requests</h5>
+                    <div class="card-text">
+                        <div class="table-responsive">
+                            <table class="table table-borderless table-striped">
+                                <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Time</th>
+                                    <th>Complete</th>
+                                    <th>Attempts</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {{range $.History 50}}
+                                    <tr>
+                                        <td>
+                                            <a href="request/{{.ID}}/">{{.ID}}</a>
+                                        </td>
+                                        <td>{{.Meta.CreatedAt.Format "02 Jan 06 15:04:05.000 MST"}}</td>
+                                        <td>
+                                            {{if .Meta.Complete}}
+                                                {{.Meta.CompleteAt.Format "02 Jan 06 15:04:05.000 MST"}}
+                                            {{else}}
+                                                in progress
+                                            {{end}}
+                                        </td>
+                                        <td>{{len .Meta.Attempts}}</td>
+                                    </tr>
+                                {{end}}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+      integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
 </body>
 </html>

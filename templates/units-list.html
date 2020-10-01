@@ -1,78 +1,102 @@
 <html>
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="https://unpkg.com/mvp.css">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 </head>
 <body>
-<header>
-    <nav>
+
+<div class="container">
+    <nav class="navbar navbar-expand-sm navbar-light bg-light">
+        <a class="navbar-brand" href="{{.Rel "/"}}">Nano-Run</a>
+        <div class="collapse navbar-collapse">
+            <ul class="navbar-nav mr-auto">
+                <li class="nav-item active">
+                    <a class="nav-link" href="{{.Rel "/unit/"}}">All units</a>
+                </li>
+                {{if .Authorized}}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{.Rel "/auth/logout"}}">Logout</a>
+                    </li>
+                {{end}}
+            </ul>
+        </div>
+        <span class="navbar-text">{{.Login}}</span>
     </nav>
-    <h1> Units </h1>
-</header>
-<main>
-    <section>
-        <table>
-            <thead>
-            <tr>
-                <th>Name</th>
-                <th>Mode</th>
-                <th>Concurrency</th>
-                <th>Attempts</th>
-                <th>Interval</th>
-                <th>Timeout</th>
-                <th>Max request size</th>
-                <th>Working directory</th>
-            </tr>
-            </thead>
-            <tbody>
-            {{range .Units}}
-                <tr>
-                    <td>
-                        <a href="unit/{{.Name}}">
-                            {{.Name}}{{if .Secured}} (secured){{end}}
-                        </a>
-                    </td>
-                    <td>
-                        <span class="unit-mode unit-mode-{{.Mode}}">{{.Mode}}</span>
-                    </td>
-                    <td>
-                        <span class="unit-mode unit-mode-workers">{{.Workers}}</span>
-                    </td>
-                    <td>
-                        {{.Attempts}}
-                    </td>
-                    <td>
-                        <span class="unit-mode unit-mode-interval">{{.Interval}}</span>
-                    </td>
-                    <td>
-                        {{with .Timeout}}
-                            {{.}}
-                        {{else}}
-                            ∞
-                        {{end}}
-                    </td>
-                    <td>
-                        {{with .MaxRequest}}
-                            {{.}}
-                        {{else}}
-                            ∞
-                        {{end}}
-                    </td>
-                    <td>
-                        {{with .WorkDir}}
-                            <details>
-                                <summary>static</summary>
-                                <p>{{.}}</p>
-                            </details>
-                        {{else}}
-                            <i>dynamic</i>
-                        {{end}}
-                    </td>
-                </tr>
-            {{end}}
-            </tbody>
-        </table>
-    </section>
-</main>
+    <br/>
+    <div class="row">
+        <div class="col">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">All units</h5>
+                    <div class="table-responsive">
+                        <table class="table table-borderless table-striped">
+                            <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Mode</th>
+                                <th>Concurrency</th>
+                                <th>Attempts</th>
+                                <th>Interval</th>
+                                <th>Timeout</th>
+                                <th>Max request size</th>
+                                <th>Working directory</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {{range .Units}}
+                                <tr>
+                                    <td>
+                                        <a href="{{.Name}}/">
+                                            {{.Name}}{{if .Secured}} (secured){{end}}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <span class="unit-mode unit-mode-{{.Mode}}">{{.Mode}}</span>
+                                    </td>
+                                    <td>
+                                        <span class="unit-mode unit-mode-workers">{{.Workers}}</span>
+                                    </td>
+                                    <td>
+                                        {{.Attempts}}
+                                    </td>
+                                    <td>
+                                        <span class="unit-mode unit-mode-interval">{{.Interval}}</span>
+                                    </td>
+                                    <td>
+                                        {{with .Timeout}}
+                                            {{.}}
+                                        {{else}}
+                                            ∞
+                                        {{end}}
+                                    </td>
+                                    <td>
+                                        {{with .MaxRequest}}
+                                            {{.}}
+                                        {{else}}
+                                            ∞
+                                        {{end}}
+                                    </td>
+                                    <td>
+                                        {{with .WorkDir}}
+                                            <details>
+                                                <summary>static</summary>
+                                                <p>{{.}}</p>
+                                            </details>
+                                        {{else}}
+                                            <i>dynamic</i>
+                                        {{end}}
+                                    </td>
+                                </tr>
+                            {{end}}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+      integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
 </body>
 </html>

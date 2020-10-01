@@ -1,5 +1,6 @@
 working_directory: /data
 config_directory: /conf.d
+ui_directory: /ui
 bind: ":80"
 graceful_shutdown: 5s
 max_request: 1048576

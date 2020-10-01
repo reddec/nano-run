@@ -2,7 +2,10 @@ package worker
 
 import (
 	"context"
+	"encoding/binary"
+	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -31,9 +34,11 @@ type (
 )
 
 const (
-	defaultAttempts   = 3
-	defaultInterval   = 3 * time.Second
-	minimalFailedCode = 500
+	defaultAttempts        = 3
+	defaultInterval        = 3 * time.Second
+	minimalFailedCode      = 500
+	nsRequest         byte = 0x00
+	nsAttempt         byte = 0x01
 )
 
 func Default(location string) (*Worker, error) {
@@ -114,12 +119,12 @@ type Worker struct {
 	concurrency int
 	reloadMeta  chan struct{}
 	interval    time.Duration
-	sequence    int64
+	sequence    uint64
 }
 
 func (mgr *Worker) init() error {
 	return mgr.meta.Iterate(func(id string, record meta.Request) error {
-		if v, err := strconv.ParseInt(strings.TrimLeft(id, "0"), 10, 64); err == nil && v > mgr.sequence {
+		if _, v, err := decodeID(id); err == nil && v > mgr.sequence {
 			mgr.sequence = v
 		} else if err != nil {
 			log.Println("found broken id:", id, "-", err)
@@ -286,7 +291,7 @@ func (mgr *Worker) call(ctx context.Context, requestID string, info *meta.Reques
 		return err
 	}
 	defer req.Body.Close()
-	attemptID := fmt.Sprintf("%016d", len(info.Attempts)+1)
+	attemptID := encodeID(nsAttempt, uint64(len(info.Attempts))+1)
 
 	req.Header.Set("X-Correlation-Id", requestID)
 	req.Header.Set("X-Attempt-Id", attemptID)
@@ -421,7 +426,7 @@ func (mgr *Worker) requeueItem(ctx context.Context, id string, info *meta.Reques
 }
 
 func (mgr *Worker) saveRequest(req *http.Request) (string, error) {
-	id := fmt.Sprintf("%016d", atomic.AddInt64(&mgr.sequence, 1))
+	id := encodeID(nsRequest, atomic.AddUint64(&mgr.sequence, 1))
 	err := mgr.blob.Push(id, func(out io.Writer) error {
 		_, err := io.Copy(out, req.Body)
 		return err
@@ -475,6 +480,25 @@ func (mgr *Worker) restoreRequest(ctx context.Context, requestID string, info *m
 		req.Header[k] = v
 	}
 	return req, nil
+}
+
+func encodeID(nsId byte, id uint64) string {
+	var data [9]byte
+	data[0] = nsId
+	binary.BigEndian.PutUint64(data[1:], id)
+	return strings.ToUpper(hex.EncodeToString(data[:]))
+}
+
+func decodeID(val string) (byte, uint64, error) {
+	hx, err := hex.DecodeString(val)
+	if err != nil {
+		return 0, 0, err
+	}
+	if len(hx) != 9 {
+		return 0, 0, errors.New("too short")
+	}
+	n := binary.BigEndian.Uint64(hx[1:])
+	return hx[0], n, nil
 }
 
 type requeueItem struct {
