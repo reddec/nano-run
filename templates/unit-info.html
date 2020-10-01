@@ -121,27 +121,27 @@
                                     {{if .JWT.Enable}}
                                         <dt class="col-sm-3">JWT</dt>
                                         <dd class="col-sm-9">in
-                                            <code>{{.JWT.Header}}</code>
+                                            <code>{{.JWT.GetHeader}}</code>
                                             header
                                         </dd>
                                     {{end}}
                                     {{if .QueryToken.Enable}}
                                         <dt class="col-sm-3">Query token</dt>
                                         <dd class="col-sm-9">in
-                                            <code>{{.QueryToken.Param}}</code>
+                                            <code>{{.QueryToken.GetParam}}</code>
                                             param
                                         </dd>
                                     {{end}}
                                     {{if .HeaderToken.Enable}}
                                         <dt class="col-sm-3">Header token</dt>
                                         <dd class="col-sm-9">in
-                                            <code>{{.HeaderToken.Header}}</code>
+                                            <code>{{.HeaderToken.GetHeader}}</code>
                                             header
                                         </dd>
                                     {{end}}
                                     {{if .Basic.Enable}}
                                         <dt class="col-sm-3">Basic</dt>
-                                        <dd class="col-sm-9">{{.Basic.Users | keys | join ", "}}</dd>
+                                        <dd class="col-sm-9">{{.Basic.Logins | join ", "}}</dd>
                                     {{end}}
                                 </dl>
                             {{end}}

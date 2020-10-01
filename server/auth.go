@@ -3,6 +3,7 @@ package server
 import (
 	"errors"
 	"net/http"
+	"sort"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
@@ -46,11 +47,15 @@ type JWT struct {
 	Secret string `yaml:"secret"` // key to verify JWT
 }
 
-func (cfg JWT) Create() AuthHandlerFunc {
-	header := cfg.Header
-	if header == "" {
-		header = "Authorization"
+func (cfg JWT) GetHeader() string {
+	if cfg.Header == "" {
+		return "Authorization"
 	}
+	return cfg.Header
+}
+
+func (cfg JWT) Create() AuthHandlerFunc {
+	header := cfg.GetHeader()
 
 	return func(req *http.Request) bool {
 		rawToken := req.Header.Get(header)
@@ -69,11 +74,15 @@ type QueryToken struct {
 	Tokens []string `yaml:"tokens"` // allowed tokens
 }
 
-func (cfg QueryToken) Create() AuthHandlerFunc {
-	param := cfg.Param
-	if param == "" {
-		param = "token"
+func (cfg QueryToken) GetParam() string {
+	if cfg.Param == "" {
+		return "token"
 	}
+	return cfg.Param
+}
+
+func (cfg QueryToken) Create() AuthHandlerFunc {
+	param := cfg.GetParam()
 	tokens := map[string]bool{}
 	for _, k := range cfg.Tokens {
 		tokens[k] = true
@@ -89,11 +98,15 @@ type HeaderToken struct {
 	Tokens []string `yaml:"tokens"` // allowed tokens
 }
 
-func (cfg HeaderToken) Create() AuthHandlerFunc {
-	header := cfg.Header
-	if header == "" {
-		header = "X-Api-Token"
+func (cfg HeaderToken) GetHeader() string {
+	if cfg.Header == "" {
+		return "X-Api-Token"
 	}
+	return cfg.Header
+}
+
+func (cfg HeaderToken) Create() AuthHandlerFunc {
+	header := cfg.GetHeader()
 	tokens := map[string]bool{}
 	for _, k := range cfg.Tokens {
 		tokens[k] = true
@@ -120,4 +133,13 @@ func (cfg Basic) Create() AuthHandlerFunc {
 		}
 		return bcrypt.CompareHashAndPassword([]byte(h), []byte(p)) == nil
 	}
+}
+
+func (cfg Basic) Logins() []string {
+	var ans []string
+	for name := range cfg.Users {
+		ans = append(ans, name)
+	}
+	sort.Strings(ans)
+	return ans
 }
