@@ -121,21 +121,21 @@
                                     {{if .JWT.Enable}}
                                         <dt class="col-sm-3">JWT</dt>
                                         <dd class="col-sm-9">in
-                                            <pre>{{.JWT.Header}}</pre>
+                                            <code>{{.JWT.Header}}</code>
                                             header
                                         </dd>
                                     {{end}}
                                     {{if .QueryToken.Enable}}
                                         <dt class="col-sm-3">Query token</dt>
                                         <dd class="col-sm-9">in
-                                            <pre>{{.QueryToken.Param}}</pre>
+                                            <code>{{.QueryToken.Param}}</code>
                                             param
                                         </dd>
                                     {{end}}
                                     {{if .HeaderToken.Enable}}
                                         <dt class="col-sm-3">Header token</dt>
                                         <dd class="col-sm-9">in
-                                            <pre>{{.HeaderToken.Header}}</pre>
+                                            <code>{{.HeaderToken.Header}}</code>
                                             header
                                         </dd>
                                     {{end}}
