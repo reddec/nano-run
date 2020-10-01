@@ -69,7 +69,7 @@
                     </div>
                     <button type="button" onclick="loadResult()" class="btn btn-primary" id="load-btn">show result
                     </button>
-                    <a target="_blank" href="result" class="btn btn-light" class="btn btn-light">open result in a new
+                    <a target="_blank" href="result" class="btn btn-default" class="btn btn-light">open result in a new
                         tab</a>
                 </div>
             </div>
@@ -105,7 +105,7 @@
         const load = document.getElementById("load")
         load.style.display = null;
         btn.style.display = 'none'
-        progress.style.display = 'visible'
+        progress.style.display = null
 
         fetch("result").then(function (res) {
             if (res.status === 200) {
@@ -124,7 +124,6 @@
         })
     }
 </script>
-<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
-      integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
+<link rel="stylesheet" href="{{.Rel "/static" "css" "bootstrap-material-design.min.css"}}">
 </body>
 </html>
