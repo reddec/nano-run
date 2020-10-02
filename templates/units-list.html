@@ -32,6 +32,7 @@
                         <table class="table table-borderless table-striped">
                             <thead>
                             <tr>
+                                <th></th>
                                 <th>Name</th>
                                 <th>Mode</th>
                                 <th>Concurrency</th>
@@ -45,10 +46,11 @@
                             <tbody>
                             {{range .Units}}
                                 <tr>
+                                    <td title="secured">
+                                        {{if .Secured}}🛡️{{end}}
+                                    </td>
                                     <td>
-                                        <a href="{{.Name}}/">
-                                            {{.Name}}{{if .Secured}} (secured){{end}}
-                                        </a>
+                                        <a href="{{.Name}}/">{{.Name}}</a>
                                     </td>
                                     <td>
                                         <span class="unit-mode unit-mode-{{.Mode}}">{{.Mode}}</span>
