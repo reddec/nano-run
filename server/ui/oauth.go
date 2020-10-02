@@ -48,10 +48,12 @@ func (cfg OAuth2) Attach(router gin.IRouter, storage SessionStorage) {
 
 		sessionID := uuid.New().String()
 		session := newOAuthSession(token)
-		err = session.fetchLogin(gctx.Request.Context(), cfg.ProfileURL, cfg.LoginField)
-		if err != nil {
-			_ = gctx.AbortWithError(http.StatusForbidden, err)
-			return
+		if cfg.ProfileURL != "" {
+			err = session.fetchLogin(gctx.Request.Context(), cfg.ProfileURL, cfg.LoginField)
+			if err != nil {
+				_ = gctx.AbortWithError(http.StatusForbidden, err)
+				return
+			}
 		}
 
 		gctx.SetCookie(sessionCookie, sessionID, 0, "", "", false, true)

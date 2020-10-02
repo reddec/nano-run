@@ -89,7 +89,7 @@ func (auth Authorization) restrict(redirectTo func(gctx *gin.Context) string, se
 	if !auth.Enabled() {
 		return func(gctx *gin.Context) {
 			gctx.Set(ctxAuthorized, false)
-			gctx.Set(ctxLogin, "anonymous")
+			gctx.Set(ctxLogin, "")
 			gctx.Next()
 		}
 	}

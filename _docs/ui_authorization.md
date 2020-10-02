@@ -16,8 +16,8 @@ Defined in the section: `auth.oauth2`
 * `callback_url` - redirect URL, must point to your sever plus `/ui/auth/oauth2/callback`
 * `auth_url` - authenticate URL, different for each provider
 * `token_url` - issue token URL, different for each provider
-* `profile_url` - URL that should return user JSON profile on GET request with authorization by token
-* `login_field` - filed name (should be string) in profile that identifies user (ex: `login`, `username` or `email`)
+* `profile_url` (optional) - URL that should return user JSON profile on GET request with authorization by token; if not defined login will an empty string
+* `login_field` - (required only if `profile_url` set)  filed name (should be string) in profile that identifies user (ex: `login`, `username` or `email`)
 * `scopes` (optional) - list of OAuth2 scopes
 
 
