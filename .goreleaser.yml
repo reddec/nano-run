@@ -40,10 +40,10 @@ nfpms:
       "bundle/debian/server.yaml": "/etc/nano-run/server.yaml"
     files:
       "bundle/debian/nano-run.service": "/etc/systemd/system/nano-run.service"
-      "templates/**": "/var/nano-run/ui"
+      "templates/**/*": "/var/nano-run/ui"
 archives:
   - files:
-      - "templates/**"
+      - "templates/**/*"
     wrap_in_directory: true
 
 uploads:
