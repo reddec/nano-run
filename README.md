@@ -93,7 +93,7 @@ Automatically creates service `nano-run.service`.
 
 ### Binary
 
-Download and unpack desired version in [releases](releases).
+Download and unpack desired version in [releases](https://github.com/reddec/nano-run/releases).
 
 ### Docker
 
