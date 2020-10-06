@@ -15,7 +15,7 @@ type serverCmd struct {
 }
 
 type serverInitCmd struct {
-	Directory  string `short:"d" long:"directory" env:"DIRECTORY" description:"Target directory" default:"server"`
+	Directory  string `short:"d" long:"directory" env:"DIRECTORY" description:"Target directory" default:"."`
 	ConfigFile string `long:"config-file" env:"CONFIG_FILE" description:"Config file name" default:"server.yaml"`
 	NoSample   bool   `long:"no-sample" env:"NO_SAMPLE" description:"Do not create same file"`
 }

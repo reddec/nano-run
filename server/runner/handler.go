@@ -2,6 +2,7 @@ package runner
 
 import (
 	"context"
+	"html/template"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -14,9 +15,14 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"nano-run/server"
+	embedded_static "nano-run/server/runner/embedded/static"
+	embedded_templates "nano-run/server/runner/embedded/templates"
 	"nano-run/server/ui"
 	"nano-run/worker"
 )
+
+//go:generate go-bindata -pkg templates -o embedded/templates/bindata.go -nometadata  -prefix  ../../templates/ ../../templates/
+//go:generate go-bindata -fs -pkg static -o embedded/static/bindata.go  -prefix  ../../templates/static/  ../../templates/static/...
 
 type Config struct {
 	UIDirectory      string           `yaml:"ui_directory"`
@@ -24,6 +30,7 @@ type Config struct {
 	ConfigDirectory  string           `yaml:"config_directory"`
 	Bind             string           `yaml:"bind"`
 	GracefulShutdown time.Duration    `yaml:"graceful_shutdown"`
+	DisableUI        bool             `yaml:"disable_ui"`
 	Auth             ui.Authorization `yaml:"auth,omitempty"`
 	TLS              struct {
 		Enable bool   `yaml:"enable"`
@@ -92,18 +99,7 @@ func (cfg Config) Create(global context.Context) (*Server, error) {
 	}
 	ctx, cancel := context.WithCancel(global)
 	router := gin.Default()
-	router.SetFuncMap(sprig.HtmlFuncMap())
-	uiPath := filepath.Join(cfg.UIDirectory, "*.html")
-	if v, err := filepath.Glob(uiPath); err == nil && len(v) > 0 {
-		// little hack to prevent panic on empty UI
-		router.LoadHTMLGlob(uiPath)
-	}
-	router.GET("/", func(gctx *gin.Context) {
-		gctx.Redirect(http.StatusTemporaryRedirect, "ui")
-	})
-	uiGroup := router.Group("/ui/")
-	ui.Attach(uiGroup, units, workers, cfg.Auth)
-	uiGroup.Static("/static/", filepath.Join(cfg.UIDirectory, "static"))
+	cfg.installUI(router, units, workers)
 	server.Attach(router.Group("/api/"), units, workers)
 
 	srv := &Server{
@@ -151,6 +147,42 @@ func (cfg Config) Run(global context.Context) error {
 	cancel()
 	<-done
 	return err
+}
+
+func (cfg Config) installUI(router *gin.Engine, units []server.Unit, workers []*worker.Worker) {
+	if cfg.DisableUI {
+		log.Println("ui disabled")
+		return
+	}
+	uiPath := filepath.Join(cfg.UIDirectory, "*.html")
+	uiGroup := router.Group("/ui/")
+	if v, err := filepath.Glob(uiPath); err == nil && len(v) > 0 {
+		cfg.useDirectoryUI(router, uiGroup)
+	} else {
+		log.Println("using embedded UI")
+		cfg.useEmbeddedUI(router, uiGroup)
+	}
+	router.GET("/", func(gctx *gin.Context) {
+		gctx.Redirect(http.StatusTemporaryRedirect, "ui")
+	})
+	ui.Attach(uiGroup, units, workers, cfg.Auth)
+}
+
+func (cfg Config) useDirectoryUI(router *gin.Engine, uiGroup gin.IRouter) {
+	uiPath := filepath.Join(cfg.UIDirectory, "*.html")
+	router.SetFuncMap(sprig.HtmlFuncMap())
+	router.LoadHTMLGlob(uiPath)
+	uiGroup.Static("/static/", filepath.Join(cfg.UIDirectory, "static"))
+}
+
+func (cfg Config) useEmbeddedUI(router *gin.Engine, uiGroup gin.IRouter) {
+	root := template.New("").Funcs(sprig.HtmlFuncMap())
+
+	for _, src := range embedded_templates.AssetNames() {
+		_, _ = root.New(src).Parse(string(embedded_templates.MustAsset(src)))
+	}
+	router.SetHTMLTemplate(root)
+	uiGroup.StaticFS("/static/", embedded_static.AssetFile())
 }
 
 type Server struct {
