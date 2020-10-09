@@ -99,6 +99,10 @@ func (cfg Config) Create(global context.Context) (*Server, error) {
 	}
 	ctx, cancel := context.WithCancel(global)
 	router := gin.Default()
+	router.Use(func(gctx *gin.Context) {
+		gctx.Request = gctx.Request.WithContext(global)
+		gctx.Next()
+	})
 	cfg.installUI(router, units, workers)
 	server.Attach(router.Group("/api/"), units, workers)
 
