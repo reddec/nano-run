@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"os/exec"
@@ -33,11 +34,12 @@ func (m *markerResponse) WriteHeader(statusCode int) {
 }
 
 type binHandler struct {
-	command     string
-	workDir     string
-	shell       string
-	environment []string
-	timeout     time.Duration
+	command         string
+	workDir         string
+	shell           string
+	environment     []string
+	timeout         time.Duration
+	gracefulTimeout time.Duration
 }
 
 func (bh *binHandler) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
@@ -75,7 +77,29 @@ func (bh *binHandler) ServeHTTP(writer http.ResponseWriter, request *http.Reques
 	cmd.Stdout = marker
 	cmd.Env = env
 	api.SetBinFlags(cmd)
+
+	var done bool
+
+	if bh.gracefulTimeout > 0 {
+		graceCtx, graceCancel := context.WithTimeout(ctx, bh.gracefulTimeout)
+		defer graceCancel()
+		go func() {
+			<-graceCtx.Done()
+			proc := cmd.Process
+			if proc == nil || done {
+				return
+			}
+			err := proc.Signal(os.Interrupt)
+			if err != nil {
+				log.Println("failed send signal to process:", err)
+			} else {
+				log.Println("sent graceful shutdown to proces")
+			}
+		}()
+	}
+
 	err := cmd.Run()
+	done = true
 
 	if codeReset, ok := writer.(interface{ Status(status int) }); ok && err != nil {
 		codeReset.Status(http.StatusBadGateway)

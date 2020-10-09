@@ -26,17 +26,18 @@ import (
 )
 
 type Unit struct {
-	Interval      time.Duration     `yaml:"interval,omitempty"`    // interval between attempts
-	Attempts      int               `yaml:"attempts,omitempty"`    // maximum number of attempts
-	Workers       int               `yaml:"workers,omitempty"`     // concurrency level - number of parallel requests
-	Mode          string            `yaml:"mode,omitempty"`        // execution mode: bin, cgi or proxy
-	WorkDir       string            `yaml:"workdir,omitempty"`     // working directory for the worker. if empty - temporary one will generated automatically
-	Command       string            `yaml:"command"`               // command in a shell to execute
-	Timeout       time.Duration     `yaml:"timeout,omitempty"`     // maximum execution timeout (enabled only for bin mode and only if positive)
-	Shell         string            `yaml:"shell,omitempty"`       // shell to execute command in bin mode (default - /bin/sh)
-	Environment   map[string]string `yaml:"environment,omitempty"` // custom environment for executable (in addition to system)
-	MaxRequest    int64             `yaml:"max_request,omitempty"` // optional maximum HTTP body size (enabled if positive)
-	Authorization struct {
+	Interval        time.Duration     `yaml:"interval,omitempty"`         // interval between attempts
+	Attempts        int               `yaml:"attempts,omitempty"`         // maximum number of attempts
+	Workers         int               `yaml:"workers,omitempty"`          // concurrency level - number of parallel requests
+	Mode            string            `yaml:"mode,omitempty"`             // execution mode: bin, cgi or proxy
+	WorkDir         string            `yaml:"workdir,omitempty"`          // working directory for the worker. if empty - temporary one will generated automatically
+	Command         string            `yaml:"command"`                    // command in a shell to execute
+	Timeout         time.Duration     `yaml:"timeout,omitempty"`          // maximum execution timeout (enabled only for bin mode and only if positive)
+	GracefulTimeout time.Duration     `yaml:"graceful_timeout,omitempty"` // maximum execution timeout after which SIGINT will be sent (enabled only for bin mode and only if positive)
+	Shell           string            `yaml:"shell,omitempty"`            // shell to execute command in bin mode (default - /bin/sh)
+	Environment     map[string]string `yaml:"environment,omitempty"`      // custom environment for executable (in addition to system)
+	MaxRequest      int64             `yaml:"max_request,omitempty"`      // optional maximum HTTP body size (enabled if positive)
+	Authorization   struct {
 		JWT struct {
 			Enable bool `yaml:"enable"` // enable JWT verification
 			JWT    `yaml:",inline"`
@@ -242,11 +243,12 @@ func (cfg Unit) createRunner() (http.Handler, error) {
 	switch cfg.Mode {
 	case "bin":
 		return &binHandler{
-			command:     cfg.Command,
-			workDir:     cfg.WorkDir,
-			shell:       cfg.Shell,
-			timeout:     cfg.Timeout,
-			environment: append(os.Environ(), makeEnvList(cfg.Environment)...),
+			command:         cfg.Command,
+			workDir:         cfg.WorkDir,
+			shell:           cfg.Shell,
+			timeout:         cfg.Timeout,
+			gracefulTimeout: cfg.GracefulTimeout,
+			environment:     append(os.Environ(), makeEnvList(cfg.Environment)...),
 		}, nil
 	case "cgi":
 		return &cgi.Handler{
