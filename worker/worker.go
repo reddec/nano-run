@@ -301,8 +301,10 @@ func (mgr *Worker) call(ctx context.Context, requestID string, info *meta.Reques
 
 	err = mgr.blob.Push(attemptID, func(out io.Writer) error {
 		res := openResponse(out)
+		started := time.Now()
 		mgr.handler.ServeHTTP(res, req)
 		header = res.meta
+		header.StartedAt = started
 		return nil
 	})
 	if err != nil {

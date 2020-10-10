@@ -40,8 +40,15 @@
                         <dl class="row">
                             <dt class="col-sm-3">ID</dt>
                             <dd class="col-sm-9">{{.AttemptID}}</dd>
-                            <dt class="col-sm-3">Created at</dt>
-                            <dd class="col-sm-9">{{.Attempt.CreatedAt.Format "02 Jan 06 15:04:05.000 MST"}}</dd>
+                            <dt class="col-sm-3">Started at</dt>
+                            <dd class="col-sm-9">
+                                {{.Attempt.StartedAt.Format "02 Jan 06 15:04:05.000 MST"}}
+                            </dd>
+                            <dt class="col-sm-3">Finished at</dt>
+                            <dd class="col-sm-9">
+                                {{.Attempt.CreatedAt.Format "02 Jan 06 15:04:05.000 MST"}}
+                                <footer class="blockquote-footer">after {{.Attempt.CreatedAt.Sub .Attempt.StartedAt}}</footer>
+                            </dd>
                             <dt class="col-sm-3">Code</dt>
                             <dd class="col-sm-9">{{.Attempt.Code}}</dd>
                         </dl>

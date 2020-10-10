@@ -14,8 +14,9 @@ type Meta interface {
 }
 
 type AttemptHeader struct {
-	Code    int         `json:"code"`
-	Headers http.Header `json:"headers"`
+	Code      int         `json:"code"`
+	Headers   http.Header `json:"headers"`
+	StartedAt time.Time   `json:"started_at"`
 }
 
 type Attempt struct {
