@@ -44,6 +44,7 @@
                             <dd class="col-sm-9">
                                 {{if .Request.Complete}}
                                     {{.Request.CompleteAt.Format "02 Jan 06 15:04:05.000 MST"}}
+                                    <footer class="blockquote-footer">after {{.Request.CompleteAt.Sub .Request.CreatedAt}}</footer>
                                 {{else}}
                                     in progress
                                 {{end}}
