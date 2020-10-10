@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"nano-run/server/api"
+	"nano-run/server/internal"
 )
 
 type markerResponse struct {
@@ -44,15 +44,8 @@ type binHandler struct {
 
 func (bh *binHandler) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 	marker := &markerResponse{res: writer}
-
 	ctx := request.Context()
-	if bh.timeout > 0 {
-		c, cancel := context.WithTimeout(ctx, bh.timeout)
-		defer cancel()
-		ctx = c
-	}
-
-	cmd := exec.CommandContext(ctx, bh.shell, "-c", bh.command) //nolint:gosec
+	cmd := exec.Command(bh.shell, "-c", bh.command) //nolint:gosec
 
 	if bh.workDir == "" {
 		tmpDir, err := ioutil.TempDir("", "")
@@ -76,30 +69,9 @@ func (bh *binHandler) ServeHTTP(writer http.ResponseWriter, request *http.Reques
 	cmd.Stdin = request.Body
 	cmd.Stdout = marker
 	cmd.Env = env
-	api.SetBinFlags(cmd)
+	internal.SetBinFlags(cmd)
 
-	var done bool
-
-	if bh.gracefulTimeout > 0 {
-		graceCtx, graceCancel := context.WithTimeout(ctx, bh.gracefulTimeout)
-		defer graceCancel()
-		go func() {
-			<-graceCtx.Done()
-			proc := cmd.Process
-			if proc == nil || done {
-				return
-			}
-			err := proc.Signal(os.Interrupt)
-			if err != nil {
-				log.Println("failed send signal to process:", err)
-			} else {
-				log.Println("sent graceful shutdown to proces")
-			}
-		}()
-	}
-
-	err := cmd.Run()
-	done = true
+	err := bh.run(ctx, cmd)
 
 	if codeReset, ok := writer.(interface{ Status(status int) }); ok && err != nil {
 		codeReset.Status(http.StatusBadGateway)
@@ -111,6 +83,62 @@ func (bh *binHandler) ServeHTTP(writer http.ResponseWriter, request *http.Reques
 	} else {
 		writer.Header().Set("X-Return-Code", strconv.Itoa(cmd.ProcessState.ExitCode()))
 		writer.WriteHeader(http.StatusNoContent)
+	}
+}
+
+func (bh *binHandler) run(global context.Context, cmd *exec.Cmd) error {
+	err := cmd.Start()
+	if err != nil {
+		return err
+	}
+
+	var (
+		gracefulTimeout <-chan time.Time
+		ctx             context.Context
+	)
+
+	var gracefulTimer *time.Ticker
+	if bh.gracefulTimeout > 0 {
+		gracefulTimer = time.NewTicker(bh.gracefulTimeout)
+		defer gracefulTimer.Stop()
+		gracefulTimeout = gracefulTimer.C
+	}
+
+	if bh.timeout > 0 {
+		t, cancel := context.WithTimeout(global, bh.timeout)
+		defer cancel()
+		ctx = t
+	} else {
+		ctx = global
+	}
+
+	var process = make(chan error, 1)
+
+	go func() {
+		defer close(process)
+		process <- cmd.Wait()
+	}()
+
+	for {
+		select {
+		case <-gracefulTimeout:
+			if err := internal.IntSignal(cmd); err != nil {
+				log.Println("failed send signal to process:", err)
+			} else {
+				log.Println("sent graceful shutdown to process")
+			}
+			gracefulTimer.Stop()
+			gracefulTimeout = nil
+		case <-ctx.Done():
+			if err := internal.KillSignal(cmd); err != nil {
+				log.Println("failed send kill to process:", err)
+			} else {
+				log.Println("sent kill to process")
+			}
+			return <-process
+		case err := <-process:
+			return err
+		}
 	}
 }
 
