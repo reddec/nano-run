@@ -12,6 +12,7 @@ import (
 
 	"github.com/Masterminds/sprig"
 	"github.com/gin-gonic/gin"
+	"github.com/robfig/cron/v3"
 	"gopkg.in/yaml.v2"
 
 	"nano-run/server"
@@ -97,6 +98,11 @@ func (cfg Config) Create(global context.Context) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
+	cronEntries, cronEngine, err := server.Cron(workers, units)
+	if err != nil {
+		return nil, err
+	}
+
 	ctx, cancel := context.WithCancel(global)
 	router := gin.Default()
 	router.Use(func(gctx *gin.Context) {
@@ -107,11 +113,13 @@ func (cfg Config) Create(global context.Context) (*Server, error) {
 	server.Attach(router.Group("/api/"), units, workers)
 
 	srv := &Server{
-		Handler: router,
-		workers: workers,
-		units:   units,
-		done:    make(chan struct{}),
-		cancel:  cancel,
+		Handler:     router,
+		workers:     workers,
+		cronEngine:  cronEngine,
+		cronEntries: cronEntries,
+		units:       units,
+		done:        make(chan struct{}),
+		cancel:      cancel,
 	}
 	go srv.run(ctx)
 	return srv, nil
@@ -191,20 +199,25 @@ func (cfg Config) useEmbeddedUI(router *gin.Engine, uiGroup gin.IRouter) {
 
 type Server struct {
 	http.Handler
-	workers []*worker.Worker
-	units   []server.Unit
-	cancel  func()
-	done    chan struct{}
-	err     error
+	workers     []*worker.Worker
+	units       []server.Unit
+	cronEntries []*server.CronEntry
+	cronEngine  *cron.Cron
+	cancel      func()
+	done        chan struct{}
+	err         error
 }
 
 func (srv *Server) Units() []server.Unit { return srv.units }
+
+func (srv *Server) Workers() []*worker.Worker { return srv.workers }
 
 func (srv *Server) Close() {
 	for _, wrk := range srv.workers {
 		wrk.Close()
 	}
 	srv.cancel()
+	<-srv.cronEngine.Stop().Done()
 	<-srv.done
 }
 
@@ -213,6 +226,7 @@ func (srv *Server) Err() error {
 }
 
 func (srv *Server) run(ctx context.Context) {
+	srv.cronEngine.Start()
 	err := server.Run(ctx, srv.workers)
 	if err != nil {
 		log.Println("workers stopped:", err)

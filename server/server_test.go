@@ -149,3 +149,29 @@ func Test_retryIfDataReturnedInBinMode(t *testing.T) {
 	}
 
 }
+
+func TestCron(t *testing.T) {
+	srv := testServer(t, runner.DefaultConfig(), map[string]server.Unit{
+		"hello": {
+			Command: "echo hello world",
+			Cron: []server.CronSpec{
+				{Spec: "@every 1s"},
+			},
+		},
+	})
+	defer srv.Close()
+	time.Sleep(time.Second + 100*time.Millisecond)
+
+	var first *meta.Request
+	err := srv.Workers()[0].Meta().Iterate(func(id string, record meta.Request) error {
+		first = &record
+		return nil
+	})
+
+	if !assert.NoError(t, err) {
+		return
+	}
+
+	assert.True(t, first.Complete)
+	assert.Len(t, first.Attempts, 1)
+}

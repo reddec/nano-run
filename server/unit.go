@@ -14,6 +14,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -58,6 +59,7 @@ type Unit struct {
 			Basic  `yaml:",inline"`
 		} `yaml:"basic,omitempty"` // basic authorization
 	} `yaml:"authorization,omitempty"`
+	Cron []CronSpec `yaml:"cron,omitempty"` // cron-tab like definition (see CronSpec)
 	name string
 }
 
@@ -99,6 +101,12 @@ func (cfg Unit) Validate() error {
 	if !(cfg.Mode == "bin" || cfg.Mode == "cgi" || cfg.Mode == "proxy") {
 		checks = append(checks, "unknown mode "+cfg.Mode)
 	}
+	for i, spec := range cfg.Cron {
+		err := spec.Validate()
+		if err != nil {
+			checks = append(checks, "cron "+spec.Label(strconv.Itoa(i))+": "+err.Error())
+		}
+	}
 	if len(checks) == 0 {
 		return nil
 	}
@@ -114,6 +122,8 @@ func (cfg Unit) SaveFile(file string) error {
 }
 
 func (cfg Unit) Name() string { return cfg.name }
+
+func (cfg Unit) Path() string { return "/" + cfg.name + "/" }
 
 func (cfg Unit) Secured() bool {
 	return cfg.Authorization.Basic.Enable ||
@@ -182,7 +192,7 @@ func Handler(units []Unit, workers []*worker.Worker) http.Handler {
 
 func Attach(router gin.IRouter, units []Unit, workers []*worker.Worker) {
 	for i, unit := range units {
-		group := router.Group("/" + unit.name + "/")
+		group := router.Group(unit.Path())
 		group.Use(unit.enableAuthorization())
 		api.Expose(group, workers[i])
 	}
