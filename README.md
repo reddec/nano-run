@@ -37,6 +37,7 @@ or company-backed project to any of the companies for/with which I worked before
 * [UI Authorization](_docs/ui_authorization.md)
 * [Unit configuration](_docs/unit.md)
 * [Docker](_docs/docker.md)
+* [Cron-like scheduler](_docs/cron.md)
 
 ## Stability
 
