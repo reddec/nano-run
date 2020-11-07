@@ -98,12 +98,15 @@ func (cfg Config) Create(global context.Context) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
-	cronEntries, cronEngine, err := server.Cron(workers, units)
+
+	ctx, cancel := context.WithCancel(global)
+
+	cronEntries, cronEngine, err := server.Cron(ctx, workers, units)
 	if err != nil {
+		cancel()
 		return nil, err
 	}
 
-	ctx, cancel := context.WithCancel(global)
 	router := gin.Default()
 	router.Use(func(gctx *gin.Context) {
 		gctx.Request = gctx.Request.WithContext(global)
