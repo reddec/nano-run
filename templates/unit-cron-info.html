@@ -1,0 +1,92 @@
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+</head>
+<body>
+<div class="container">
+    <nav class="navbar navbar-expand-sm navbar-light bg-light">
+        <a class="navbar-brand" href="{{.Rel "/"}}">Nano-Run</a>
+        <div class="collapse navbar-collapse">
+            <ul class="navbar-nav mr-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="{{.Rel "/unit/"}}">All units</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{.Rel "/cron/"}}">All schedules</a>
+                </li>
+                {{if .Authorized}}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{.Rel "/auth/logout"}}">Logout</a>
+                    </li>
+                {{end}}
+            </ul>
+        </div>
+        <span class="navbar-text">{{.Login}}</span>
+    </nav>
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{.Rel "/unit/"}}" title="all units">units</a></li>
+            <li class="breadcrumb-item"><a href="{{.Rel "/unit" .Unit.Name}}" title="unit">{{.Unit.Name}}</a></li>
+            <li class="breadcrumb-item active" title="cron">{{.Label}}</li>
+        </ol>
+    </nav>
+    <div class="row">
+        <div class="col">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Scheduled job {{.Label}}</h5>
+                    <h6 class="card-subtitle mb-2 text-muted">Configuration</h6>
+                    <div class="card-text">
+                        <dl class="row">
+                            <dt class="col-sm-3">Spec</dt>
+                            <dd class="col-sm-9">
+                                <a href="https://crontab.guru/#{{.Cron.Spec.Spec}}" target="_blank"><code>{{.Cron.Spec.Spec}}</code></a>
+                            </dd>
+                            {{if .Cron.Spec.Content}}
+                            <dt class="col-sm-3">Content</dt>
+                            <dd class="col-sm-9"><pre>{{.Cron.Spec.Content}}</pre></dd>
+                            {{else if .Cron.Spec.ContentFile}}
+                                <dt class="col-sm-3">Content file</dt>
+                                <dd class="col-sm-9">{{.Cron.Spec.ContentFile}}</dd>
+                            {{end}}
+                        </dl>
+                    </div>
+                    {{if .Cron.Spec.Headers}}
+                    <h6 class="card-subtitle mb-2 text-muted">Headers</h6>
+                    <div class="card-text">
+                        {{with .Cron.Spec.Headers}}
+                            <div class="table-responsive">
+                                <table class="table table-borderless table-striped">
+                                    <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Value</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    {{range $k,$v := .}}
+                                        <tr>
+                                            <td>
+                                                <pre>{{$k}}</pre>
+                                            </td>
+                                            <td>{{$v}}</td>
+                                        </tr>
+                                    {{end}}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {{else}}
+                            no custom variables defined
+                        {{end}}
+                    </div>
+                    {{end}}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<link rel="stylesheet" href="{{.Rel "/static" "css" "bootstrap-material-design.min.css"}}">
+
+</body>
+</html>

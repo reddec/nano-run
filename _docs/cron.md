@@ -14,13 +14,13 @@ cron:
     - spec: 30 * * * *
       name: named schedule
     # each hour with custom payload and headers
-    - spec: @hourly
+    - spec: "@hourly"
       content: |
         hello world
       headers:
         X-Some-Header: test-header
     # each day with content from file
-    - spec: @daily
+    - spec: "@daily"
       content_file: /path/to/content
 ```
 

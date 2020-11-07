@@ -1,0 +1,67 @@
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+</head>
+<body>
+
+<div class="container">
+    <nav class="navbar navbar-expand-sm navbar-light bg-light">
+        <a class="navbar-brand" href="{{.Rel "/"}}">Nano-Run</a>
+        <div class="collapse navbar-collapse">
+            <ul class="navbar-nav mr-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="{{.Rel "/unit/"}}">All units</a>
+                </li>
+                <li class="nav-item active">
+                    <a class="nav-link" href="{{.Rel "/cron/"}}">All schedules</a>
+                </li>
+                {{if .Authorized}}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{.Rel "/auth/logout"}}">Logout</a>
+                    </li>
+                {{end}}
+            </ul>
+        </div>
+        <span class="navbar-text">{{.Login}}</span>
+    </nav>
+    <br/>
+    <div class="row">
+        <div class="col">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">All cron</h5>
+                    <div class="table-responsive">
+                        <table class="table table-borderless table-striped">
+                            <thead>
+                            <tr>
+                                <th>Unit</th>
+                                <th>Name</th>
+                                <th>Spec</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {{range .Entries}}
+                                <tr>
+                                    <td>
+                                        <a href="{{$.Rel "/unit" .Entry.Unit.Name}}">{{.Entry.Unit.Name}}</a>
+                                    </td>
+                                    <td>
+                                        <a href="{{$.Rel "/unit" .Entry.Unit.Name "cron" (print .Index)}}">{{.Entry.Spec.Label .Entry.Name}}</a>
+                                    </td>
+                                    <td>
+                                        <code>{{.Entry.Spec.Spec}}</code>
+                                    </td>
+                                </tr>
+                            {{end}}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<link rel="stylesheet" href="{{.Rel "/static" "css" "bootstrap-material-design.min.css"}}">
+</body>
+</html>

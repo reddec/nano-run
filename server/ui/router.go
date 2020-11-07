@@ -6,6 +6,8 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
+	"sort"
+	"strconv"
 	"time"
 
 	"github.com/Masterminds/sprig"
@@ -16,25 +18,38 @@ import (
 	"nano-run/worker"
 )
 
-func Expose(units []server.Unit, workers []*worker.Worker, uiDir string, auth Authorization) http.Handler {
+func Expose(units []server.Unit, workers []*worker.Worker, cronEntries []*server.CronEntry, uiDir string, auth Authorization) http.Handler {
 	router := gin.New()
 	router.SetFuncMap(sprig.HtmlFuncMap())
 	router.LoadHTMLGlob(filepath.Join(uiDir, "*.html"))
-	Attach(router, units, workers, auth)
+	Attach(router, units, workers, cronEntries, auth)
 	return router
 }
 
-func Attach(router gin.IRouter, units []server.Unit, workers []*worker.Worker, auth Authorization) {
+func Attach(router gin.IRouter, units []server.Unit, workers []*worker.Worker, cronEntries []*server.CronEntry, auth Authorization) {
 	ui := &uiRouter{
 		units: make(map[string]unitInfo),
 	}
 
+	var offset int
 	for i := range units {
 		u := units[i]
 		w := workers[i]
+		var ce []*server.CronEntry
+
+		var last int
+		for last = offset; last < len(cronEntries); last++ {
+			if cronEntries[last].Worker != w {
+				break
+			}
+		}
+		ce = cronEntries[offset:last]
+		offset = last
+
 		ui.units[u.Name()] = unitInfo{
-			Unit:   u,
-			Worker: w,
+			Unit:        u,
+			Worker:      w,
+			CronEntries: ce,
 		}
 	}
 	sessions := &memorySessions{}
@@ -49,20 +64,26 @@ func Attach(router gin.IRouter, units []server.Unit, workers []*worker.Worker, a
 	})
 	auth.attach(router.Group("/auth"), "login.html", sessions)
 
-	restricted := router.Group("/unit/").Use(auth.restrict(func(gctx *gin.Context) string {
+	guard := auth.restrict(func(gctx *gin.Context) string {
 		b := base(gctx)
 		return b.Rel("/auth/")
-	}, sessions))
+	}, sessions)
 
-	restricted.GET("/", ui.listUnits)
-	restricted.GET("/:name/", ui.unitInfo)
-	restricted.POST("/:name/", ui.unitInvoke)
-	restricted.GET("/:name/history", ui.unitHistory)
-	restricted.GET("/:name/request/:request/", ui.unitRequestInfo)
-	restricted.POST("/:name/request/:request/", ui.unitRequestRetry)
-	restricted.GET("/:name/request/:request/payload", ui.unitRequestPayload)
-	restricted.GET("/:name/request/:request/attempt/:attempt/", ui.unitRequestAttemptInfo)
-	restricted.GET("/:name/request/:request/attempt/:attempt/result", ui.unitRequestAttemptResult)
+	unitsRoutes := router.Group("/unit/").Use(guard)
+
+	unitsRoutes.GET("/", ui.listUnits)
+	unitsRoutes.GET("/:name/", ui.unitInfo)
+	unitsRoutes.POST("/:name/", ui.unitInvoke)
+	unitsRoutes.GET("/:name/history", ui.unitHistory)
+	unitsRoutes.GET("/:name/request/:request/", ui.unitRequestInfo)
+	unitsRoutes.POST("/:name/request/:request/", ui.unitRequestRetry)
+	unitsRoutes.GET("/:name/request/:request/payload", ui.unitRequestPayload)
+	unitsRoutes.GET("/:name/request/:request/attempt/:attempt/", ui.unitRequestAttemptInfo)
+	unitsRoutes.GET("/:name/request/:request/attempt/:attempt/result", ui.unitRequestAttemptResult)
+	unitsRoutes.GET("/:name/cron/:index", ui.unitCronInfo)
+
+	cronRoutes := router.Group("/cron/").Use(guard)
+	cronRoutes.GET("/", ui.listCron)
 }
 
 type uiRouter struct {
@@ -271,6 +292,39 @@ func (ui *uiRouter) listUnits(gctx *gin.Context) {
 	gctx.HTML(http.StatusOK, "units-list.html", reply)
 }
 
+func (ui *uiRouter) listCron(gctx *gin.Context) {
+	type uiEntry struct {
+		Index int
+		Entry *server.CronEntry
+	}
+
+	var reply struct {
+		baseResponse
+		Entries []uiEntry
+	}
+
+	var specs = make([]uiEntry, 0, len(ui.units))
+	for _, info := range ui.units {
+		for i, spec := range info.CronEntries {
+			specs = append(specs, uiEntry{
+				Index: i,
+				Entry: spec,
+			})
+		}
+	}
+	sort.Slice(specs, func(i, j int) bool {
+		if specs[i].Entry.Config.Name() < specs[j].Entry.Config.Name() {
+			return true
+		} else if specs[i].Entry.Config.Name() == specs[j].Entry.Config.Name() && specs[i].Index < specs[j].Index {
+			return true
+		}
+		return false
+	})
+	reply.baseResponse = base(gctx)
+	reply.Entries = specs
+	gctx.HTML(http.StatusOK, "cron-list.html", reply)
+}
+
 func (ui *uiRouter) unitHistory(gctx *gin.Context) {
 	type viewUnit struct {
 		unitInfo
@@ -285,5 +339,35 @@ func (ui *uiRouter) unitHistory(gctx *gin.Context) {
 	gctx.HTML(http.StatusOK, "unit-history.html", viewUnit{
 		unitInfo:     info,
 		baseResponse: base(gctx),
+	})
+}
+
+func (ui *uiRouter) unitCronInfo(gctx *gin.Context) {
+	type viewUnit struct {
+		unitInfo
+		baseResponse
+		Cron  *server.CronEntry
+		Label string
+	}
+	name := gctx.Param("name")
+	info, ok := ui.units[name]
+	if !ok {
+		gctx.AbortWithStatus(http.StatusNotFound)
+		return
+	}
+
+	strIndex := gctx.Param("index")
+	index, err := strconv.Atoi(strIndex)
+
+	if err != nil || index < 0 || index >= len(info.CronEntries) {
+		gctx.AbortWithStatus(http.StatusNotFound)
+		return
+	}
+	entry := info.CronEntries[index]
+	gctx.HTML(http.StatusOK, "unit-cron-info.html", viewUnit{
+		unitInfo:     info,
+		baseResponse: base(gctx),
+		Cron:         entry,
+		Label:        entry.Spec.Label(strconv.Itoa(index)),
 	})
 }

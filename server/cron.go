@@ -60,6 +60,8 @@ type CronEntry struct {
 	ID     cron.EntryID
 }
 
+func (ce *CronEntry) Unit() Unit { return ce.Config }
+
 // Cron initializes cron engine and registers all required worker schedules to it.
 func Cron(workers []*worker.Worker, configs []Unit) ([]*CronEntry, *cron.Cron, error) {
 	engine := cron.New()

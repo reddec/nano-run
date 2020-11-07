@@ -109,7 +109,7 @@ func (cfg Config) Create(global context.Context) (*Server, error) {
 		gctx.Request = gctx.Request.WithContext(global)
 		gctx.Next()
 	})
-	cfg.installUI(router, units, workers)
+	cfg.installUI(router, units, workers, cronEntries)
 	server.Attach(router.Group("/api/"), units, workers)
 
 	srv := &Server{
@@ -161,7 +161,7 @@ func (cfg Config) Run(global context.Context) error {
 	return err
 }
 
-func (cfg Config) installUI(router *gin.Engine, units []server.Unit, workers []*worker.Worker) {
+func (cfg Config) installUI(router *gin.Engine, units []server.Unit, workers []*worker.Worker, cronEntries []*server.CronEntry) {
 	if cfg.DisableUI {
 		log.Println("ui disabled")
 		return
@@ -177,7 +177,7 @@ func (cfg Config) installUI(router *gin.Engine, units []server.Unit, workers []*
 	router.GET("/", func(gctx *gin.Context) {
 		gctx.Redirect(http.StatusTemporaryRedirect, "ui")
 	})
-	ui.Attach(uiGroup, units, workers, cfg.Auth)
+	ui.Attach(uiGroup, units, workers, cronEntries, cfg.Auth)
 }
 
 func (cfg Config) useDirectoryUI(router *gin.Engine, uiGroup gin.IRouter) {

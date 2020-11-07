@@ -13,6 +13,9 @@
                 <li class="nav-item active">
                     <a class="nav-link" href="{{.Rel "/unit/"}}">All units</a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{.Rel "/cron/"}}">All schedules</a>
+                </li>
                 {{if .Authorized}}
                     <li class="nav-item">
                         <a class="nav-link" href="{{.Rel "/auth/logout"}}">Logout</a>

@@ -9,8 +9,9 @@ import (
 )
 
 type unitInfo struct {
-	Unit   server.Unit
-	Worker *worker.Worker
+	Unit        server.Unit
+	Worker      *worker.Worker
+	CronEntries []*server.CronEntry
 }
 
 type historyRecord struct {

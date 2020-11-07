@@ -12,6 +12,9 @@
                 <li class="nav-item">
                     <a class="nav-link" href="{{.Rel "/unit/"}}">All units</a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{.Rel "/cron/"}}">All schedules</a>
+                </li>
                 {{if .Authorized}}
                     <li class="nav-item">
                         <a class="nav-link" href="{{.Rel "/auth/logout"}}">Logout</a>
@@ -162,6 +165,45 @@
             </div>
         </div>
     </div>
+    {{with .CronEntries}}
+    <br/>
+    <div class="row">
+        <div class="col">
+            <form method="post">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Schedules</h5>
+                        <div class="card-text">
+                            <div class="table-responsive">
+                                <table class="table table-borderless table-striped">
+                                    <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Spec</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    {{range $index, $entry := .}}
+                                        <tr>
+                                            <td>
+                                                <a href="cron/{{$index}}">{{$entry.Spec.Label (print "#" $index)}}</a>
+                                            </td>
+                                            <td>
+                                                <code>{{$entry.Spec.Spec}}</code>
+                                            </td>
+                                        </tr>
+                                    {{end}}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    {{end}}
     <br/>
     <div class="row">
         <div class="col">
