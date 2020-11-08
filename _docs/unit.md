@@ -19,3 +19,4 @@ Ie: how long to let command react on SIGTERM signal.
 * `workdir` (optional, string) - working directory for the worker. if empty - temporary one will be generated automatically.
 * `authorization` (optional, [Authorization](authorization.md)) - request authorization
 * `cron` (optional,[Cron](cron.md)) - scheduled requests
+* `private` (optional, bool) - do not expose over API, could be used for cron-only jobs

@@ -27,6 +27,7 @@ import (
 )
 
 type Unit struct {
+	Private         bool              `yaml:"private,omitempty"`          // private unit - do not expose over API, could useful for cron-only tasks
 	Interval        time.Duration     `yaml:"interval,omitempty"`         // interval between attempts
 	Attempts        int               `yaml:"attempts,omitempty"`         // maximum number of attempts
 	Workers         int               `yaml:"workers,omitempty"`          // concurrency level - number of parallel requests
@@ -192,9 +193,13 @@ func Handler(units []Unit, workers []*worker.Worker) http.Handler {
 
 func Attach(router gin.IRouter, units []Unit, workers []*worker.Worker) {
 	for i, unit := range units {
-		group := router.Group(unit.Path())
-		group.Use(unit.enableAuthorization())
-		api.Expose(group, workers[i])
+		if !unit.Private {
+			group := router.Group(unit.Path())
+			group.Use(unit.enableAuthorization())
+			api.Expose(group, workers[i])
+		} else {
+			log.Println("do not expose unit", unit.Name(), "because it's private")
+		}
 	}
 }
 

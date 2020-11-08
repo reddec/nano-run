@@ -49,8 +49,10 @@
                             <tbody>
                             {{range .Units}}
                                 <tr>
-                                    <td title="secured">
-                                        {{if .Secured}}🛡️{{end}}
+                                    <td>
+                                        {{if .Private}}<span title="not exposed over API">🏠</span>
+                                        {{else if .Secured}}<span title="with authorization">🛡️</span>
+                                        {{end}}
                                     </td>
                                     <td>
                                         <a href="{{.Name}}/">{{.Name}}</a>
