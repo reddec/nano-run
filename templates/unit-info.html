@@ -35,11 +35,18 @@
             <div class="card">
                 <div class="card-body">
                     <h5 class="card-title">
-                        {{if .Unit.Private}}<span title="not exposed over API">🏠</span>
-                        {{else if .Unit.Secured}}<span title="with authorization">🛡️</span>
-                        {{end}}
                         {{.Unit.Name}}
                     </h5>
+                    <p>
+                        {{with .Unit}}
+                            {{if .Private}}<span title="not exposed over API">🏠</span>
+                            {{else if .Secured}}<span title="with authorization">🛡️</span>
+                            {{end}}
+                            {{if gt (len .Cron) 0}}
+                                <span title="with scheduler">⏲</span>
+                            {{end}}
+                        {{end}}
+                    </p>
                     <h6 class="card-subtitle mb-2 text-muted">Configuration</h6>
                     <div class="card-text">
                         <dl class="row">
@@ -107,9 +114,9 @@
                             {{end}}
                         </dl>
                     </div>
-                    <h6 class="card-subtitle mb-2 text-muted">Environment</h6>
-                    <div class="card-text">
-                        {{with .Unit.Environment}}
+                    {{with .Unit.Environment}}
+                        <h6 class="card-subtitle mb-2 text-muted">Environment</h6>
+                        <div class="card-text">
                             <div class="table-responsive">
                                 <table class="table table-borderless table-striped">
                                     <thead>
@@ -130,16 +137,12 @@
                                     </tbody>
                                 </table>
                             </div>
-                        {{else}}
-                            no custom variables defined
-                        {{end}}
-                    </div>
-                    <br/>
-                    <h6 class="card-subtitle mb-2 text-muted">Authorization</h6>
-                    <div class="card-text">
-                        {{if not $.Unit.Secured}}
-                            no authorization defined
-                        {{else}}
+                        </div>
+                        <br/>
+                    {{end}}
+                    {{if  $.Unit.Secured}}
+                        <h6 class="card-subtitle mb-2 text-muted">Authorization</h6>
+                        <div class="card-text">
                             {{with .Unit.Authorization}}
                                 <dl class="row">
                                     {{if .JWT.Enable}}
@@ -169,8 +172,8 @@
                                     {{end}}
                                 </dl>
                             {{end}}
-                        {{end}}
-                    </div>
+                        </div>
+                    {{end}}
                 </div>
             </div>
         </div>

@@ -1,6 +1,6 @@
 # Nano-Run
 
-![nano-run](https://user-images.githubusercontent.com/6597086/97143787-4f70db80-179e-11eb-9b9c-7e16bfff845e.png)
+![sample-nano-run](https://user-images.githubusercontent.com/6597086/98463432-303e6900-21f6-11eb-9632-806b1c99813b.gif)
 
 Lightweight async request runner. 
 

@@ -287,6 +287,9 @@ func (ui *uiRouter) listUnits(gctx *gin.Context) {
 	for _, info := range ui.units {
 		units = append(units, info.Unit)
 	}
+	sort.Slice(units, func(i, j int) bool {
+		return units[i].Name() < units[j].Name()
+	})
 	reply.baseResponse = base(gctx)
 	reply.Units = units
 	gctx.HTML(http.StatusOK, "units-list.html", reply)

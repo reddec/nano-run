@@ -50,8 +50,13 @@
                             {{range .Units}}
                                 <tr>
                                     <td>
-                                        {{if .Private}}<span title="not exposed over API">🏠</span>
-                                        {{else if .Secured}}<span title="with authorization">🛡️</span>
+                                        {{with .}}
+                                            {{if .Private}}<span title="not exposed over API">🏠</span>
+                                            {{else if .Secured}}<span title="with authorization">🛡️</span>
+                                            {{end}}
+                                            {{if gt (len .Cron) 0}}
+                                                <span title="with scheduler">⏲</span>
+                                            {{end}}
                                         {{end}}
                                     </td>
                                     <td>
