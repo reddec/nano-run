@@ -1,6 +1,6 @@
 # Nano-Run
 
-![sample-nano-run](https://user-images.githubusercontent.com/6597086/98463432-303e6900-21f6-11eb-9632-806b1c99813b.gif)
+![nano-run](https://user-images.githubusercontent.com/6597086/97143787-4f70db80-179e-11eb-9b9c-7e16bfff845e.png)
 
 Lightweight async request runner. 
 
@@ -24,7 +24,7 @@ All codes, bugs, opinions, and other related subjects should not be considered a
 or company-backed project to any of the companies for/with which I worked before or/and at present.   
 
 
-![image](https://user-images.githubusercontent.com/6597086/95172239-9b58e200-07e9-11eb-8ca7-bf48d93a178b.png)
+![sample-nano-run](https://user-images.githubusercontent.com/6597086/98463432-303e6900-21f6-11eb-9632-806b1c99813b.gif)
 
 ## Documentation
 
