@@ -177,15 +177,56 @@ func TestCron(t *testing.T) {
 }
 
 func TestSync(t *testing.T) {
-	srv := testServer(t, runner.DefaultConfig(), map[string]server.Unit{
-		"hello": {
-			Command: "echo hello world",
-		},
-	})
-	defer srv.Close()
+	t.Run("wait with default timeout", func(t *testing.T) {
+		srv := testServer(t, runner.DefaultConfig(), map[string]server.Unit{
+			"hello": {
+				Command: "echo hello world",
+			},
+		})
+		defer srv.Close()
 
-	req := httptest.NewRequest(http.MethodPut, "/api/hello/", bytes.NewBufferString("hello world"))
-	res := httptest.NewRecorder()
-	srv.ServeHTTP(res, req)
-	assert.Equal(t, http.StatusSeeOther, res.Code)
+		req := httptest.NewRequest(http.MethodPut, "/api/hello/", bytes.NewBufferString("hello world"))
+		res := httptest.NewRecorder()
+		srv.ServeHTTP(res, req)
+		assert.Equal(t, http.StatusSeeOther, res.Code)
+	})
+	t.Run("wait with custom timeout", func(t *testing.T) {
+		srv := testServer(t, runner.DefaultConfig(), map[string]server.Unit{
+			"hello": {
+				Command: "echo hello world",
+			},
+		})
+		defer srv.Close()
+
+		req := httptest.NewRequest(http.MethodPut, "/api/hello/?wait=1h", bytes.NewBufferString("hello world"))
+		res := httptest.NewRecorder()
+		srv.ServeHTTP(res, req)
+		assert.Equal(t, http.StatusSeeOther, res.Code)
+	})
+	t.Run("fail on malformed timeout", func(t *testing.T) {
+		srv := testServer(t, runner.DefaultConfig(), map[string]server.Unit{
+			"hello": {
+				Command: "echo hello world",
+			},
+		})
+		defer srv.Close()
+
+		req := httptest.NewRequest(http.MethodPut, "/api/hello/?wait=10000", bytes.NewBufferString("hello world"))
+		res := httptest.NewRecorder()
+		srv.ServeHTTP(res, req)
+		assert.Equal(t, http.StatusBadRequest, res.Code)
+	})
+	t.Run("fail on invalid timeout", func(t *testing.T) {
+		srv := testServer(t, runner.DefaultConfig(), map[string]server.Unit{
+			"hello": {
+				Command: "echo hello world",
+			},
+		})
+		defer srv.Close()
+
+		req := httptest.NewRequest(http.MethodPut, "/api/hello/?wait=-10s", bytes.NewBufferString("hello world"))
+		res := httptest.NewRecorder()
+		srv.ServeHTTP(res, req)
+		assert.Equal(t, http.StatusBadRequest, res.Code)
+	})
 }
