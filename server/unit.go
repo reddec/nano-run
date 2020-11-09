@@ -185,18 +185,18 @@ func Workers(workdir string, configurations []Unit) ([]*worker.Worker, error) {
 	return ans, nil
 }
 
-func Handler(units []Unit, workers []*worker.Worker) http.Handler {
+func Handler(units []Unit, workers []*worker.Worker, defaultWaitTime time.Duration) http.Handler {
 	router := gin.New()
-	Attach(router, units, workers)
+	Attach(router, units, workers, defaultWaitTime)
 	return router
 }
 
-func Attach(router gin.IRouter, units []Unit, workers []*worker.Worker) {
+func Attach(router gin.IRouter, units []Unit, workers []*worker.Worker, defaultWaitTime time.Duration) {
 	for i, unit := range units {
 		if !unit.Private {
 			group := router.Group(unit.Path())
 			group.Use(unit.enableAuthorization())
-			api.Expose(group, workers[i])
+			api.Expose(group, workers[i], defaultWaitTime)
 		} else {
 			log.Println("do not expose unit", unit.Name(), "because it's private")
 		}

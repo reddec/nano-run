@@ -120,6 +120,7 @@ type Worker struct {
 	reloadMeta  chan struct{}
 	interval    time.Duration
 	sequence    uint64
+	trackers    sync.Map // id -> *Tracker
 }
 
 func (mgr *Worker) init() error {
@@ -154,6 +155,26 @@ func (mgr *Worker) Enqueue(req *http.Request) (string, error) {
 	log.Println("new request saved:", id)
 	err = mgr.queue.Push([]byte(id))
 	return id, err
+}
+
+// Enqueue request to storage, save meta-info to meta storage and push id into processing queue. Generated ID
+// always unique and returns only in case of successful enqueue. Returns Tracker to understand job processing.
+// Tracking jobs is not free operation! Do not use it just because you can.
+func (mgr *Worker) EnqueueWithTracker(req *http.Request) (*Tracker, error) {
+	id, err := mgr.saveRequest(req)
+	if err != nil {
+		return nil, err
+	}
+	track := newTracker(id)
+	log.Println("new request saved:", id)
+	mgr.trackers.Store(id, track)
+	err = mgr.queue.Push([]byte(id))
+	if err != nil {
+		track.close()
+		mgr.trackers.Delete(id)
+		return nil, err
+	}
+	return track, nil
 }
 
 // Complete request manually.
@@ -448,6 +469,7 @@ func (mgr *Worker) requestDead(ctx context.Context, id string, info *meta.Reques
 		handler(ctx, id, info)
 	}
 	log.Println("request", id, "completely failed")
+	mgr.completeTrack(id, "", true)
 }
 
 func (mgr *Worker) requestSuccess(ctx context.Context, id string, info *meta.Request) {
@@ -466,6 +488,7 @@ func (mgr *Worker) requestProcessed(ctx context.Context, id string, attemptID st
 		handler(ctx, id, attemptID, info)
 	}
 	log.Println("request", id, "processed with attempt", attemptID)
+	mgr.completeTrack(id, attemptID, info.Success())
 }
 
 func (mgr *Worker) restoreRequest(ctx context.Context, requestID string, info *meta.Request) (*http.Request, error) {
@@ -482,6 +505,19 @@ func (mgr *Worker) restoreRequest(ctx context.Context, requestID string, info *m
 		req.Header[k] = v
 	}
 	return req, nil
+}
+
+func (mgr *Worker) completeTrack(id string, attemptID string, failed bool) {
+	track, ok := mgr.trackers.LoadAndDelete(id)
+	if !ok {
+		return
+	}
+	tracker := track.(*Tracker)
+	if failed {
+		tracker.failed()
+	} else {
+		tracker.ok(attemptID)
+	}
 }
 
 func encodeID(nsID byte, id uint64) string {

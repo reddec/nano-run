@@ -52,7 +52,7 @@ func testServer(t *testing.T, cfg runner.Config, units map[string]server.Unit) *
 		}
 	}
 
-	srv, err := cfg.Create(context.Background())
+	srv, err := cfg.Create(context.Background(), cfg.DefaultWaitTime)
 	if !assert.NoError(t, err) {
 		srv.Close()
 		t.Fatal("failed to create server")
@@ -174,4 +174,18 @@ func TestCron(t *testing.T) {
 
 	assert.True(t, first.Complete)
 	assert.Len(t, first.Attempts, 1)
+}
+
+func TestSync(t *testing.T) {
+	srv := testServer(t, runner.DefaultConfig(), map[string]server.Unit{
+		"hello": {
+			Command: "echo hello world",
+		},
+	})
+	defer srv.Close()
+
+	req := httptest.NewRequest(http.MethodPut, "/api/hello/", bytes.NewBufferString("hello world"))
+	res := httptest.NewRecorder()
+	srv.ServeHTTP(res, req)
+	assert.Equal(t, http.StatusSeeOther, res.Code)
 }

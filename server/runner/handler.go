@@ -33,6 +33,7 @@ type Config struct {
 	GracefulShutdown time.Duration    `yaml:"graceful_shutdown"`
 	DisableUI        bool             `yaml:"disable_ui"`
 	Auth             ui.Authorization `yaml:"auth,omitempty"`
+	DefaultWaitTime  time.Duration    `yaml:"wait_time,omitempty"`
 	TLS              struct {
 		Enable bool   `yaml:"enable"`
 		Cert   string `yaml:"cert"`
@@ -41,6 +42,7 @@ type Config struct {
 }
 
 const (
+	defaultWaitTime         = 30 * time.Second
 	defaultGracefulShutdown = 5 * time.Second
 	defaultBind             = "127.0.0.1:8989"
 )
@@ -52,6 +54,7 @@ func DefaultConfig() Config {
 	cfg.ConfigDirectory = filepath.Join("conf.d")
 	cfg.UIDirectory = filepath.Join("ui")
 	cfg.GracefulShutdown = defaultGracefulShutdown
+	cfg.DefaultWaitTime = defaultWaitTime
 	return cfg
 }
 
@@ -89,7 +92,7 @@ func (cfg Config) SaveFile(file string) error {
 	return ioutil.WriteFile(file, data, 0600)
 }
 
-func (cfg Config) Create(global context.Context) (*Server, error) {
+func (cfg Config) Create(global context.Context, defaultWaitTime time.Duration) (*Server, error) {
 	units, err := server.Units(cfg.ConfigDirectory)
 	if err != nil {
 		return nil, err
@@ -113,7 +116,7 @@ func (cfg Config) Create(global context.Context) (*Server, error) {
 		gctx.Next()
 	})
 	cfg.installUI(router, units, workers, cronEntries)
-	server.Attach(router.Group("/api/"), units, workers)
+	server.Attach(router.Group("/api/"), units, workers, defaultWaitTime)
 
 	srv := &Server{
 		Handler:     router,
@@ -132,7 +135,7 @@ func (cfg Config) Run(global context.Context) error {
 	ctx, cancel := context.WithCancel(global)
 	defer cancel()
 
-	srv, err := cfg.Create(global)
+	srv, err := cfg.Create(global, cfg.DefaultWaitTime)
 	if err != nil {
 		return err
 	}

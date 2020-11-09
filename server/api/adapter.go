@@ -14,14 +14,15 @@ import (
 )
 
 // Expose worker as HTTP handler:
-//     POST /                  - post task async, returns 303 See Other and location.
+//     POST /                  - post task async, returns 303 See Other and location
+//     PUT  /                  - post task synchronously, supports ?wait=<duration> parameter for custom wait time
 //     GET  /:id               - get task info.
 //     POST /:id               - retry task, redirects to /:id
 //     GET  /:id/completed     - redirect to completed attempt (or 404 if task not yet complete)
 //     GET  /:id/attempt/:atid - get attempt result (as-is).
 //     GET  /:id/request       - replay request (as-is).
-func Expose(router gin.IRouter, wrk *worker.Worker) {
-	//TODO: wait
+func Expose(router gin.IRouter, wrk *worker.Worker, defaultWaitTime time.Duration) {
+	handler := &workerHandler{wrk: wrk, defaultWait: defaultWaitTime}
 	router.POST("/", func(gctx *gin.Context) {
 		id, err := wrk.Enqueue(gctx.Request)
 		if err != nil {
@@ -32,7 +33,7 @@ func Expose(router gin.IRouter, wrk *worker.Worker) {
 		gctx.Header("X-Correlation-Id", id)
 		gctx.Redirect(http.StatusSeeOther, id)
 	})
-	handler := &workerHandler{wrk: wrk}
+	router.PUT("/", handler.createSyncTask)
 	taskRoutes := router.Group("/:id")
 	taskRoutes.GET("", handler.getTask)
 	taskRoutes.POST("", handler.retry)
@@ -45,7 +46,37 @@ func Expose(router gin.IRouter, wrk *worker.Worker) {
 }
 
 type workerHandler struct {
-	wrk *worker.Worker
+	wrk         *worker.Worker
+	defaultWait time.Duration
+}
+
+func (wh *workerHandler) createSyncTask(gctx *gin.Context) {
+	var queryParams struct {
+		Wait time.Duration `query:"wait" form:"wait"`
+	}
+	queryParams.Wait = wh.defaultWait
+
+	if err := gctx.BindQuery(&queryParams); err != nil {
+		return
+	}
+	if queryParams.Wait <= 0 {
+		gctx.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+
+	tracker, err := wh.wrk.EnqueueWithTracker(gctx.Request)
+	if err != nil {
+		log.Println("failed to enqueue:", err)
+		_ = gctx.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	gctx.Header("X-Correlation-Id", tracker.ID())
+	select {
+	case <-tracker.Done():
+		gctx.Redirect(http.StatusSeeOther, tracker.ID()+"/completed")
+	case <-time.After(queryParams.Wait):
+		gctx.AbortWithStatus(http.StatusGatewayTimeout)
+	}
 }
 
 // get request meta information.

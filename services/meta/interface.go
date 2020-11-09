@@ -34,3 +34,12 @@ type Request struct {
 	Method     string      `json:"method"`
 	Complete   bool        `json:"complete"`
 }
+
+func (rq *Request) Success() bool {
+	for _, item := range rq.Attempts {
+		if item.Code == 0 {
+			return true
+		}
+	}
+	return false
+}
