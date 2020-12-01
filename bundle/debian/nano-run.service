@@ -5,8 +5,6 @@ Description=Lightweight async request processor
 ExecStart=/usr/local/bin/nano-run server run -c /etc/nano-run/server.yaml
 Restart=always
 RestartSec=3
-User=nano-run
-Group=nano-run
 Environment=GIN_MODE=release
 
 [Install]
