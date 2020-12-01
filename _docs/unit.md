@@ -6,6 +6,7 @@
 Schema:
 
 * `command` (required, string) -  command to execute (will be executed in a shell)
+* `user` (optional, string) - custom user as process owner (only `bin` mode and only for linux), usually requires root privileges
 * `interval` (optional, interval) - interval between attempts
 * `timeout` (optional, interval) - maximum execution timeout (enabled only for bin mode and only if positive)
 * `graceful_timeout` (optional, interval) - maximum execution timeout after which SIGINT will be sent (enabled only for bin mode and only if positive).

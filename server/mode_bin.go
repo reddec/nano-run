@@ -34,6 +34,7 @@ func (m *markerResponse) WriteHeader(statusCode int) {
 }
 
 type binHandler struct {
+	user            string
 	command         string
 	workDir         string
 	shell           string
@@ -70,8 +71,13 @@ func (bh *binHandler) ServeHTTP(writer http.ResponseWriter, request *http.Reques
 	cmd.Stdout = marker
 	cmd.Env = env
 	internal.SetBinFlags(cmd)
-
-	err := bh.run(ctx, cmd)
+	err := setUser(cmd, bh.user)
+	if err != nil {
+		writer.Header().Set("X-Return-Code", strconv.Itoa(cmd.ProcessState.ExitCode()))
+		writer.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	err = bh.run(ctx, cmd)
 
 	if codeReset, ok := writer.(interface{ Status(status int) }); ok && err != nil {
 		codeReset.Status(http.StatusBadGateway)

@@ -34,6 +34,7 @@ type Unit struct {
 	Mode            string            `yaml:"mode,omitempty"`             // execution mode: bin, cgi or proxy
 	WorkDir         string            `yaml:"workdir,omitempty"`          // working directory for the worker. if empty - temporary one will generated automatically
 	Command         string            `yaml:"command"`                    // command in a shell to execute
+	User            string            `yaml:"user,omitempty"`             // user name as process owner (only for bin mode)
 	Timeout         time.Duration     `yaml:"timeout,omitempty"`          // maximum execution timeout (enabled only for bin mode and only if positive)
 	GracefulTimeout time.Duration     `yaml:"graceful_timeout,omitempty"` // maximum execution timeout after which SIGINT will be sent (enabled only for bin mode and only if positive)
 	Shell           string            `yaml:"shell,omitempty"`            // shell to execute command in bin mode (default - /bin/sh)
@@ -258,6 +259,7 @@ func (cfg Unit) createRunner() (http.Handler, error) {
 	switch cfg.Mode {
 	case "bin":
 		return &binHandler{
+			user:            cfg.User,
 			command:         cfg.Command,
 			workDir:         cfg.WorkDir,
 			shell:           cfg.Shell,
