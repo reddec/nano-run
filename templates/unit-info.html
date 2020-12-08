@@ -108,7 +108,7 @@
                             </dd>
                             {{if or (eq .Unit.Mode "bin") (eq .Unit.Mode "cgi")}}
                                 <dt class="col-sm-3">Command</dt>
-                                <dd class="col-sm-9">{{.Unit.Command}}</dd>
+                                <dd class="col-sm-9"><pre style="overflow-x: auto">{{.Unit.Command}}</pre></dd>
                                 <dt class="col-sm-3">Shell</dt>
                                 <dd class="col-sm-9">{{.Unit.Shell}}</dd>
                             {{end}}
