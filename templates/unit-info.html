@@ -57,8 +57,7 @@
                                 <dt class="col-sm-3">API endpoint</dt>
                                 <dd class="col-sm-9">
                                     <code>
-                                        <noscript>JS required to detect API url</noscript>
-                                        <script>document.write((new URL("../../../api/{{.Unit.Name}}/", window.location).href))</script>
+                                        {{$.BaseURL}}/api/{{.Unit.Name}}/
                                     </code>
                                 </dd>
                             {{- end}}
@@ -154,9 +153,22 @@
                                     {{end}}
                                     {{if .QueryToken.Enable}}
                                         <dt class="col-sm-3">Query token</dt>
-                                        <dd class="col-sm-9">in
-                                            <code>{{.QueryToken.GetParam}}</code>
-                                            param
+                                        <dd class="col-sm-9">
+                                            <details>
+                                                <summary>
+                                                    in
+                                                    <code>{{.QueryToken.GetParam}}</code>
+                                                    param
+                                                </summary>
+                                                <ul>
+                                                    {{range .QueryToken.Tokens}}
+                                                        <li>
+                                                            <code>{{$.BaseURL}}/api/{{$.Unit.Name}}/?{{$.Unit.Authorization.QueryToken.GetParam}}={{.}}</code>
+                                                        </li>
+                                                    {{end}}
+                                                </ul>
+                                            </details>
+
                                         </dd>
                                     {{end}}
                                     {{if .HeaderToken.Enable}}
