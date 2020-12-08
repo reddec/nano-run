@@ -31,7 +31,7 @@ func Expose(router gin.IRouter, wrk *worker.Worker, defaultWaitTime time.Duratio
 			return
 		}
 		gctx.Header("X-Correlation-Id", id)
-		gctx.Redirect(http.StatusSeeOther, id)
+		gctx.Redirect(http.StatusSeeOther, id+"?"+gctx.Request.URL.RawQuery)
 	})
 	router.PUT("/", handler.createSyncTask)
 	taskRoutes := router.Group("/:id")
@@ -73,7 +73,7 @@ func (wh *workerHandler) createSyncTask(gctx *gin.Context) {
 	gctx.Header("X-Correlation-Id", tracker.ID())
 	select {
 	case <-tracker.Done():
-		gctx.Redirect(http.StatusSeeOther, tracker.ID()+"/completed")
+		gctx.Redirect(http.StatusSeeOther, tracker.ID()+"/completed?"+gctx.Request.URL.RawQuery)
 	case <-time.After(queryParams.Wait):
 		gctx.AbortWithStatus(http.StatusGatewayTimeout)
 	}
@@ -122,7 +122,7 @@ func (wh *workerHandler) retry(gctx *gin.Context) {
 		return
 	}
 	gctx.Header("X-Correlation-Id", id)
-	gctx.Redirect(http.StatusSeeOther, id)
+	gctx.Redirect(http.StatusSeeOther, id+"?"+gctx.Request.URL.RawQuery)
 }
 
 func (wh *workerHandler) completeRequest(gctx *gin.Context) {

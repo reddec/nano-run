@@ -2,7 +2,7 @@
 
 ![nano-run](https://user-images.githubusercontent.com/6597086/97143787-4f70db80-179e-11eb-9b9c-7e16bfff845e.png)
 
-Lightweight async request runner. 
+Lightweight async request runner. GitOps friendly.
 
 A simplified version of [trusted-cgi](https://github.com/reddec/trusted-cgi) designed
 for async processing extreme amount of requests.
@@ -22,6 +22,14 @@ Main goals:
 Please note that the project is being developed in free time, as a non-profitable hobby project. 
 All codes, bugs, opinions, and other related subjects should not be considered as the official position, official project,
 or company-backed project to any of the companies for/with which I worked before or/and at present.   
+
+TODO:
+
+* On attempt failed job
+* On failed job
+* On success job
+* Per endpoint swagger
+* Pickup file as an artifact
 
 
 ![sample-nano-run](https://user-images.githubusercontent.com/6597086/98463432-303e6900-21f6-11eb-9632-806b1c99813b.gif)
